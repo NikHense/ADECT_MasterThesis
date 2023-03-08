@@ -20,8 +20,8 @@ warnings.filterwarnings('ignore')
 # df = pd.read_csv('file.csv')
 # %%
 # %% params sql connection
-SERVER = os.environ.get('SERVER')
-DB = 'DMA'
+SERVER = 'T-SQLDWH-DEV' #os.environ.get('SERVER')
+DB = 'HUB'
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')
 # %% sql connection
@@ -37,29 +37,21 @@ engine = create_engine(
     fast_executemany=True)
 # %%
 # %% sql query
-SQL_QUERY = '''
-SELECT
- sl.Sales_Header_Code
-,sl.Quantity
-,sl.Amount_Net_LCY
-,sl.Discount_Amount_Net_LCY
-,sl.Hours_to_dispatch
-,CONCAT(d.DayOfWeekNumber,' ',d.DayLongName) AS DayLongName
-FROM DMA.ONLN.FACT_Sales_Line sl
-INNER JOIN DMA.ONLN.DIM_Date d ON sl.FK_Date_Order = d.PK_Date
-WHERE Quantity > 0
-AND FK_Date_Order > 20230101
-'''
+SQL_QUERY1 = 'SELECT * FROM PAPO.RELN_RE_Payment_Entry'
+SQL_QUERY2 = 'SELECT * FROM PAPO.RELN_RE_Payment_Line'
 # %% read
-starttime = time.time()
-df = pd.DataFrame(engine.connect().execute(text(SQL_QUERY)))
-print(f'Database read process took {time.time() - starttime} seconds')
+#starttime = time.time()
+df1= pd.DataFrame(engine.connect().execute(text(SQL_QUERY1)))
+df2 = pd.DataFrame(engine.connect().execute(text(SQL_QUERY2)))
+#print(f'Database read process took {time.time() - starttime} seconds')
 # %%
-df.info()
+#df1.info()
+df2.info()
 # %%
 df.describe()  # .apply(lambda s: s.apply(lambda x: format(x, 'f')))
 # %%
-df.head()
+df1.head()
+df2.head()
 # %%
 sns.distplot(df['Quantity'])
 # %%
@@ -82,7 +74,7 @@ plt.show()
 df.groupby('Quantity').agg(['max', 'min', 'count', 'median', 'mean'])
 # %%
 # analyze single df, other: "compare" two df, "compare_intra" two subsets of df
-sv.analyze(df).show_html()
+sv.analyze(df1).show_html()
 # %%
 # penguins = sns.load_dataset("penguins")
 # sns.pairplot(penguins)
