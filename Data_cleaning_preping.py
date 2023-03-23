@@ -24,9 +24,9 @@ for col in cat_cols:
     df[col] = df[col].astype('category')
 
 # get the unique categorical values and corresponding codes for the '???' column
-    # unique_mandant = df['Mandant'].cat.categories
-    # for i in range(len(unique_mandant)):
-    #     print(f"{unique_mandant[i]}: {i}")
+    unique_mandant = df['Mandant'].cat.categories
+    for i in range(len(unique_mandant)):
+        print(f"{unique_mandant[i]}: {i}")
 
 
 # %% Comparing and retrieving similar 'City' names
