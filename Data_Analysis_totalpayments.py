@@ -36,6 +36,8 @@ engine = create_engine(
 SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
 total_payments = pd.DataFrame(engine.connect().execute(
     text(SQL_TOTAL_PAYMENTS)))
+# Save data from in csv file 
+total_payments.to_csv('total_payments.csv', index=False)
 
 # %% Print out the info of data frame
 total_payments.info()
