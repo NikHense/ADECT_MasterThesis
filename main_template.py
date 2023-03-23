@@ -8,8 +8,8 @@ import json
 import pandas as pd
 from sqlalchemy import create_engine, text
 # %% params sql connection
-PROJECT_NAME = 'Test Project'
-SERVER = 'T-SQLDWH-DEV' #os.environ.get('SERVER')
+PROJECT_NAME = 'Anomaly Detection'
+SERVER = 'T-SQLDWH-DEV'      # os.environ.get('SERVER')
 DB = 'HUB'
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')
@@ -49,21 +49,20 @@ df = pd.DataFrame(engine.connect().execute(text(SQL_QUERY)))
 print(f'Database read process took {time.time() - starttime:.1f} seconds')
 
 # %%
-# print(f'Main process took {time.time() - starttime_main:.1f} seconds overall')
-# # %% slack alert finish
-# msg_finish = f'{datetime.datetime.fromtimestamp(time.time())}: ' \
-#              f'{PROJECT_NAME} finished in ' \
-#              f'{time.time() - starttime_main:.1f} seconds'
-# # %% slack alert finish: POST
-# response = requests.post(
-#     SLACK_WEBHOOK,
-#     headers={'Content-Type': 'application/json'},
-#     data=json.dumps({"text": msg_finish})
-#     )
-# if response.status_code != 200:
-#     raise ValueError(
-#         'Request to slack returned an error %s, the response is:\n%s'
-#         % (response.status_code, response.text)
-#     )
-# %%'
-
+print(f'Main process took{time.time() - starttime_main:.1f}seconds overall')
+# %% slack alert finish
+msg_finish = f'{datetime.datetime.fromtimestamp(time.time())}: ' \
+             f'{PROJECT_NAME} finished in ' \
+             f'{time.time() - starttime_main:.1f} seconds'
+# %% slack alert finish: POST
+response = requests.post(
+    SLACK_WEBHOOK,
+    headers={'Content-Type': 'application/json'},
+    data=json.dumps({"text": msg_finish})
+    )
+if response.status_code != 200:
+    raise ValueError(
+        'Request to slack returned an error %s, the response is:\n%s'
+        % (response.status_code, response.text)
+    )
+# %% 
