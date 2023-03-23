@@ -73,3 +73,5 @@ venv*/
 *.csv
 *.parquet
 *.pickle
+*.sql
+test.txt
