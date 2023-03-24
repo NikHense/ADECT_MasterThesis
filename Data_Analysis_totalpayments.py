@@ -36,7 +36,7 @@ engine = create_engine(
 SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
 total_payments = pd.DataFrame(engine.connect().execute(
     text(SQL_TOTAL_PAYMENTS)))
-# Save data from in csv file 
+# Save data from in csv file
 total_payments.to_csv('total_payments.csv', index=False)
 
 # %% Print out the info of data frame
@@ -51,6 +51,6 @@ total_payments.head()
 # Pairplot of total payments
 sns.pairplot(total_payments)
 
-# %%analyze single df, 
+# %%analyze single df,
 # or "compare" two df, "compare_intra" two subsets of df
 sv.analyze(total_payments).show_html()
