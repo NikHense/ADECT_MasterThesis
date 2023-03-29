@@ -2,105 +2,103 @@
 import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from fuzzywuzzy import fuzz
-import time
-import datetime
-import json
-import requests
-import itertools
-from multiprocessing import Pool
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import time
+# import datetime
+# import json
+# import requests
+# import itertools
+# from multiprocessing import Pool
+from sqlalchemy import create_engine, text
 
-# %% Load csv-file into dataframe
-df = pd.read_csv('total_payments.csv')
+# %% params sql connection
+SERVER = 'T-SQLDWH-DEV'  # os.environ.get('SERVER')
+DB = 'ML'
+USERNAME = os.environ.get('USERNAME')
+PASSWORD = os.environ.get('PASSWORD')
+# %% sql connection
+conn = ("Driver={ODBC Driver 18 for SQL Server};"
+        "Server="+SERVER+";"
+        "Database="+DB+";"
+        "UID="+USERNAME+";"
+        "PWD="+PASSWORD+";"
+        "Encrypt=YES;"
+        "TrustServerCertificate=YES")
+engine = create_engine(
+    f'mssql+pyodbc://?odbc_connect={conn}',
+    fast_executemany=True)
+
+# %%
+SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
+total_payments = pd.DataFrame(engine.connect().execute(
+    text(SQL_TOTAL_PAYMENTS)))
+
 # %% Print out the info of data frame
-df.info()
+total_payments.info()
 
-# %% Change specific features to a categorical data type
-cat_cols = ['Country_Region_Code', 'Payment_Method_Code',
-            'Customer_IBAN','Review_Status', 'Created_By', 'Source_System',  'Mandant']
+# %% Change data type of specific columns
+# Change data type to integer type
+int_cols = ['Object_Number', 'Vendor_Number']
+for col in int_cols:
+    total_payments[col] = total_payments[col].astype(int)
 
+# Change data type to category
+cat_cols = ['Payment_Number', 'Country_Region_Code', 'Payment_Method_Code',
+            'Customer_IBAN', 'Vendor_Bank_Origin', 'Review_Status',
+            'Created_By', 'Source_System',  'Mandant']
 for col in cat_cols:
-    df[col] = df[col].astype('category')
+    total_payments[col] = total_payments[col].astype('category')
+
 # get the unique categorical values and corresponding codes for column
-    unique_Country_Region_Code = df['Country_Region_Code'].cat.categories
-    for i in range(len(unique_Country_Region_Code)):
-        print(f"{unique_Country_Region_Code[i]}: {i}")
+    # Vendor_Bank_Origin = total_payments['Vendor_Bank_Origin'].cat.categories
+    # for i in range(len(Vendor_Bank_Origin)):
+    # print(f"{Vendor_Bank_Origin[i]}: {i}")
 
+# Convert data type to float
+float_cols = ['Amount_Applied', 'Amount_Initial', 'Discount_Applied',
+              'Discount_Rate', 'Discount_Possible']
+for col in float_cols:
+    total_payments[col] = total_payments[col].astype(float)
 
-# %% Comparing and retrieving similar 'City' names
-starttime = time.time()
+# Convert data type to datetime
+date_cols = ['Posting_Date', 'Last_Payment_Date', 'Year-Month']
+for col in date_cols:
+    total_payments[col] = pd.to_datetime(total_payments[col])
 
-#transform the entries of the 'City' column in the df data frame into a list of strings
-df['City'] = df['City'].astype(str)
-cities = df['City'].tolist()
+# %% Replace ' ' with NaN and print oud count of empty cells per column
+# Replace ' ' with NaN
+total_payments.replace(' ', np.nan, inplace=True)
 
-# define a function to check if two values are similar
-def is_similar(a, b):
-    return fuzz.partial_ratio(a, b) in range(90,101)  # adjust similarity threshold as needed
+# Count the number of empty cells per column
+empty_cells = total_payments.isna().sum()
 
-# define a separate function to perform the comparison
-def get_similarities(city1, cities1):
-    similarities = []
-    for city2 in cities1:
-        if is_similar(city1, city2):
-            similarities.append(city2)
-    return similarities
+# Print the result
+print(empty_cells)
 
-# use a hash table to remove duplicates
-cities = list(set(cities))
+# %% Print out the info of data frame
+total_payments.info()
 
-# use multiprocessing to parallelize the comparisons
-pool = Pool()
-similar_values = {}
-threshold = 100
-for i, city1 in enumerate(cities):
-    similarities = pool.apply_async(get_similarities, (city1, cities[i+1:]))
-    similar_cities = similarities.get()
-    if len(similar_cities) > 0:
-        similar_values[city1] = similar_cities
+# %% Select columns for isolation forest
+# Select columns for isolation forest
+total_payments_if = total_payments[['Payment_Number', 'Gen_Jnl_Line_Number',
+                                    'Line_Number', 'ID_Vendor_Entry',
+                                    'Object_Number', 'Vendor_Number',
+                                    'Country_Region_Code', 'Amount_Applied',
+                                    'Amount_Initial', 'Discount_Applied',
+                                    'Discount_Allowed', 'Discount_Rate',
+                                    'Discount_Possible', 'Payment_Method_Code',
+                                    'Customer_IBAN', 'Vendor_IBAN',
+                                    'Vendor_BIC', 'Vendor_Bank_Origin',
+                                    'Posting_Date', 'Last_Payment_Date',
+                                    'Blocked_Vendor', 'Review_Status',
+                                    'Created_By', 'Source_System',
+                                    'Year-Month', 'Mandant']]
 
-# print the similar values
-for city, similar_cities in similar_values.items():
-    print(f"{city}: {'; '.join(similar_cities)}")
-    
-print(f'Similarity Detection process took {time.time() - starttime:.1f} seconds')
-# %% Comparing and retrieving similar 'Name' values
-starttime = time.time()
+# %% Print out the info of data frame
+total_payments_if.info()
 
-#transform the entries of the 'City' column in the df data frame into a list of strings
-df['Name'] = df['Name'].astype(str)
-names = df['Name'].tolist()
+# %%Count distinct values in 'Payment_Number' column
+total_payments['Payment_Number'].nunique()
 
-# define a function to check if two values are similar
-def is_similar(a, b):
-    return fuzz.partial_ratio(a, b) in range(95,101)  # adjust similarity threshold as needed
-
-# define a separate function to perform the comparison
-def get_similarities(name1, names1):
-    similarities = []
-    for name2 in names1:
-        if is_similar(name1, name2):
-            similarities.append(name2)
-    return similarities
-
-# use a hash table to remove duplicates
-names = list(set(names))
-
-# use multiprocessing to parallelize the comparisons
-pool = Pool()
-similar_values = {}
-threshold = 100
-for i, name1 in enumerate(names):
-    similarities = pool.apply_async(get_similarities, (name1, names[i+1:]))
-    similar_names = similarities.get()
-    if len(similar_names) > 0:
-        similar_values[name1] = similar_names
-
-# print the similar values
-for name, similar_names in similar_values.items():
-    print(f"{name}: {'; '.join(similar_names)}")
-    
-print(f'Similarity Detection process took {time.time() - starttime:.1f} seconds')
 # %%
