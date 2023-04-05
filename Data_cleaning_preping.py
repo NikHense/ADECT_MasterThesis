@@ -37,16 +37,26 @@ total_payments = pd.DataFrame(engine.connect().execute(
 # %% Print out the info of data frame
 total_payments.info()
 
+# %% Combining Vendor_IBAN and Vendor_BIC
+total_payments['Vendor_IBAN'] = total_payments['Vendor_IBAN'].astype(str)
+total_payments['Vendor_BIC'] = total_payments['Vendor_BIC'].astype(str)
+total_payments['Vendor_IBAN_BIC'] = total_payments['Vendor_IBAN']
++ total_payments['Vendor_BIC']
+# Insert a column with the value of 'Vendor_IBAN_BIC'
+# to the position after 'Vendor_BIC'
+# total_payments.insert(11, 'Vendor_IBAN_BIC',
+#                       total_payments['Vendor_IBAN_BIC'])
+
 # %% Change data type of specific columns
 # Change data type to integer type
 int_cols = ['Object_Number', 'Vendor_Number']
 for col in int_cols:
     total_payments[col] = total_payments[col].astype(int)
 
-# Change data type to category
+# Change string data type to categorical values
 cat_cols = ['Payment_Number', 'Country_Region_Code', 'Payment_Method_Code',
-            'Customer_IBAN', 'Vendor_Bank_Origin', 'Review_Status',
-            'Created_By', 'Source_System',  'Mandant']
+            'Customer_IBAN', 'Vendor_Bank_Origin', 'Vendor_IBAN_BIC',
+            'Review_Status', 'Created_By', 'Source_System',  'Mandant']
 for col in cat_cols:
     total_payments[col] = total_payments[col].astype('category')
 
@@ -62,7 +72,7 @@ for col in float_cols:
     total_payments[col] = total_payments[col].astype(float)
 
 # Convert data type to datetime
-date_cols = ['Posting_Date', 'Last_Payment_Date', 'Year-Month']
+date_cols = ['Posting_Date', 'Year-Month']
 for col in date_cols:
     total_payments[col] = pd.to_datetime(total_payments[col])
 
@@ -78,27 +88,4 @@ print(empty_cells)
 
 # %% Print out the info of data frame
 total_payments.info()
-
-# %% Select columns for isolation forest
-# Select columns for isolation forest
-total_payments_if = total_payments[['Payment_Number', 'Gen_Jnl_Line_Number',
-                                    'Line_Number', 'ID_Vendor_Entry',
-                                    'Object_Number', 'Vendor_Number',
-                                    'Country_Region_Code', 'Amount_Applied',
-                                    'Amount_Initial', 'Discount_Applied',
-                                    'Discount_Allowed', 'Discount_Rate',
-                                    'Discount_Possible', 'Payment_Method_Code',
-                                    'Customer_IBAN', 'Vendor_IBAN',
-                                    'Vendor_BIC', 'Vendor_Bank_Origin',
-                                    'Posting_Date', 'Last_Payment_Date',
-                                    'Blocked_Vendor', 'Review_Status',
-                                    'Created_By', 'Source_System',
-                                    'Year-Month', 'Mandant']]
-
-# %% Print out the info of data frame
-total_payments_if.info()
-
-# %%Count distinct values in 'Payment_Number' column
-total_payments['Payment_Number'].nunique()
-
 # %%
