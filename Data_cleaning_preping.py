@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 # import time
 # import datetime
 # import json
@@ -11,8 +11,6 @@ import seaborn as sns
 # import itertools
 # from multiprocessing import Pool
 from sqlalchemy import create_engine, text
-from sklearn.preprocessing import MinMaxScaler
-
 
 # %% params sql connection
 SERVER = 'T-SQLDWH-DEV'  # os.environ.get('SERVER')
