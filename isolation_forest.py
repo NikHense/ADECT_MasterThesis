@@ -4,7 +4,6 @@ import time
 # import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.ensemble import IsolationForest
 # from sklearn.inspection import DecisionBoundaryDisplay
 from numpy import bincount
@@ -130,7 +129,7 @@ data_IsoForest.insert(1, "anomaly1", anomaly1, True)
 # subsample1 = data_IsoForest[data_IsoForest['Blocked_Vendor']
 #                             != 0].sample(n=125, random_state=42)
 
-# %% Execute grid search for isolation forest
+# %% Execute grid search for isolation forest (!!! 7 min running time !!!)
 starttime = time.time()
 
 # Define list of parameter values to test
@@ -192,23 +191,26 @@ seconds = int((time.time() - starttime) % 60)
 print(f'Isolation Forest grid search process took {minutes} minutes and {seconds} seconds')
 
 # %% Evaluate grid search of isolation forest by plotting the results
-# Plot the results of the grid search
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.lineplot(x='n_estimators', y='n_outliers', hue='max_samples',
-             data=iso_output, ax=ax)
-ax.set_title('Number of outliers for different parameter combinations')
+# Plot the results of the grid search in 3D
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(iso_output['n_estimators'], iso_output['max_samples'],
+           iso_output['n_outliers'], c=iso_output['n_outliers'],
+           cmap='viridis', linewidth=0.5)
 ax.set_xlabel('n_estimators')
-ax.set_ylabel('Number of outliers')
+ax.set_ylabel('max_samples')
+ax.set_zlabel('n_outliers')
+ax.set_title('Number of outliers for different parameter combinations')
 plt.show()
 
-# %% Plot the results of the grid search using matplotlib
-fig, ax = plt.subplots(figsize=(10, 6))
-for max_samples in max_samples_list:
-    ax.plot(iso_output[iso_output['max_samples'] == max_samples]['n_estimators'],
-            iso_output[iso_output['max_samples'] == max_samples]['n_outliers'],
-            label=f'max_samples={max_samples}')
-ax.set_title('Number of outliers for different parameter combinations')
-ax.set_xlabel('n_estimators')
-ax.set_ylabel('Number of outliers')
-ax.legend()
-plt.show()
+# %% Identify the average number of outliers for all parameter combinations
+print(iso_output['n_outliers'].mean())
+
+# Give me top 10 combination of parameters that is closest
+# to the average number of outliers
+top10 = iso_output.loc[(iso_output['n_outliers'] -
+                        iso_output['n_outliers'].mean()
+                        ).abs().argsort()[:10]]
+
+print(top10)
+# %%
