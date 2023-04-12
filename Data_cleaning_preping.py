@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 # import matplotlib.pyplot as plt
-# import seaborn as sns
+import seaborn as sns
 # import time
 # import datetime
 # import json
@@ -11,6 +11,8 @@ import numpy as np
 # import itertools
 # from multiprocessing import Pool
 from sqlalchemy import create_engine, text
+from sklearn.preprocessing import MinMaxScaler
+
 
 # %% params sql connection
 SERVER = 'T-SQLDWH-DEV'  # os.environ.get('SERVER')
@@ -68,15 +70,16 @@ for col in cat_cols:
 # Convert data type to float
 float_cols = ['Amount_Applied', 'Amount_Initial', 'Discount_Applied',
               'Discount_Rate', 'Discount_Possible']
+
 for col in float_cols:
     total_payments[col] = total_payments[col].astype(float)
 
 # Convert data type to datetime
-date_cols = ['Posting_Date', 'Year-Month']
+date_cols = ['Posting_Date', 'Due_Date', 'Year-Month']
 for col in date_cols:
     total_payments[col] = pd.to_datetime(total_payments[col])
 
-# %% Replace ' ' with NaN and print oud count of empty cells per column
+# %% Replace ' ' with NaN and print out count of empty cells per column
 # Replace ' ' with NaN
 total_payments.replace(' ', np.nan, inplace=True)
 
@@ -88,4 +91,5 @@ print(empty_cells)
 
 # %% Print out the info of data frame
 total_payments.info()
+
 # %%
