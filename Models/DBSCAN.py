@@ -13,45 +13,45 @@ from multiprocessing import Pool
 
 # %% Run an inital DBSCAN to test whether it works
 # Standardize the features using StandardScaler
-starttime = time.time()
-scaler = StandardScaler()
-kmeans_data_scaled = scaler.fit_transform(kmeans_data)
+# starttime = time.time()
+# scaler = StandardScaler()
+# kmeans_data_scaled = scaler.fit_transform(kmeans_data)
 
-# Perform a PCA on kmeans_data
-pca = PCA(n_components=15)
-kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
+# # Perform a PCA on kmeans_data
+# pca = PCA(n_components=15)
+# kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
 
-# Apply DBSCAN to cluster the data
-y_pred = DBSCAN(eps=0.9, min_samples=5,
-                n_jobs=-1).fit(kmeans_data_pca)
+# # Apply DBSCAN to cluster the data
+# y_pred = DBSCAN(eps=0.9, min_samples=5,
+#                 n_jobs=-1).fit(kmeans_data_pca)
 
-core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
-core_samples_mask[y_pred.core_sample_indices_] = True
-labels = y_pred.labels_
+# core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
+# core_samples_mask[y_pred.core_sample_indices_] = True
+# labels = y_pred.labels_
 
-# Number of clusters in labels, ignoring noise if present.
-n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
-n_noise_ = list(labels).count(-1)
+# # Number of clusters in labels, ignoring noise if present.
+# n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+# n_noise_ = list(labels).count(-1)
 
-print('Estimated number of clusters: %d' % n_clusters_)
-print('Estimated number of noise points: %d' % n_noise_)
-print("Silhouette Coefficient: %0.3f"
-      % metrics.silhouette_score(kmeans_data_scaled, labels))
+# print('Estimated number of clusters: %d' % n_clusters_)
+# print('Estimated number of noise points: %d' % n_noise_)
+# print("Silhouette Coefficient: %0.3f"
+#       % metrics.silhouette_score(kmeans_data_scaled, labels))
 
-# Invert the scaling applied by StandardScaler
-kmeans_output = scaler.inverse_transform(kmeans_data_scaled)
+# # Invert the scaling applied by StandardScaler
+# kmeans_output = scaler.inverse_transform(kmeans_data_scaled)
 
-# # Invert the PCA transformation
-# kmeans_data_pca_inverted = pca.inverse_transform(kmeans_data_pca)
+# # # Invert the PCA transformation
+# # kmeans_data_pca_inverted = pca.inverse_transform(kmeans_data_pca)
 
-# Convert the kmeans_output array to a pandas DataFrame
-kmeans_output = pd.DataFrame(kmeans_output, columns=kmeans_data.columns)
+# # Convert the kmeans_output array to a pandas DataFrame
+# kmeans_output = pd.DataFrame(kmeans_output, columns=kmeans_data.columns)
 
-# Add the labels column to the kmeans_output
-kmeans_output['labels'] = labels
-kmeans_output['noise'] = kmeans_output['labels'] == -1
+# # Add the labels column to the kmeans_output
+# kmeans_output['labels'] = labels
+# kmeans_output['noise'] = kmeans_output['labels'] == -1
 
-print(f'DBSCAN process took {time.time() - starttime} seconds')
+# print(f'DBSCAN process took {time.time() - starttime} seconds')
 
 
 # %% Define list of parameter values to test
@@ -80,7 +80,7 @@ min_samples_list_l = list(range(193, 204, 1)) # closing in on best silhouette sc
 # eps_list_u = list(np.arange(4, 5, 0.1)) # closing in on best silhouette score
 # min_samples_list_u = list(range(50, 80, 5)) # closing in on best silhouette score
 
-eps_list_u = list(np.arange(4.4, 4.65, 0.01))  # closing in on best silhouette score
+eps_list_u = list(np.arange(4.4, 4.6, 0.01))  # closing in on best silhouette score
 min_samples_list_u = list(range(70, 80, 1))  # closing in on best silhouette score
 
 # %% Run DBSCAN, testing the different paramter combinations (lower range of eps)
