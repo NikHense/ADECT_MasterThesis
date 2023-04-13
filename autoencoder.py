@@ -110,7 +110,6 @@ history = autoencoder.fit(X_train, X_train,
           validation_data=(X_test, X_test),
           shuffle=True)
 
-
 # %%
 # Store the loss and val_loss values in separate arrays
 loss_values = history.history['loss']
