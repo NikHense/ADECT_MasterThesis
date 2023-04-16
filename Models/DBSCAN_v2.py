@@ -1,5 +1,4 @@
 # %% Import libraries for k-means clustering algorithm
-
 import time
 import numpy as np
 import pandas as pd
@@ -13,6 +12,8 @@ from sklearn import metrics
 from multiprocessing import Pool
 from kneed import KneeLocator
 
+# %% Start timer
+totaltime = time.time()
 
 # %% Test out the PCA and optimal number of principal components
 
@@ -91,8 +92,6 @@ kneedle = KneeLocator(distances[:, 0], distances[:, 1],
 print(round(kneedle.elbow, 0))
 print(round(kneedle.elbow_y, 3))
 
-
-
 # Plot the k-distance graph with the knee point (zoomed in)
 plt.figure(figsize=(10, 10))
 plt.plot(distances[:, 0], distances[:, 1], 'ro-', linewidth=2)
@@ -114,7 +113,7 @@ plt.show()
 eps = round(kneedle.elbow_y, 3)
 
 # Define the optimal min_samples value (acc. Sander's 1998)
-min_samples_list = list(range(n_components, (2*n_components-1)+5, 1)) 
+min_samples_list = list(range(n_components, (2*n_components-1)+5, 1))
 
 # ---------------------------------------------------------------------
 # lower range of eps
@@ -144,16 +143,9 @@ min_samples_list = list(range(n_components, (2*n_components-1)+5, 1))
 
 # %% Run DBSCAN, testing the different paramter combinations (inital run)
 starttime = time.time()
-scaler = StandardScaler()
-kmeans_data_scaled = scaler.fit_transform(kmeans_data)
-
-
-# Perform a PCA on kmeans_data
-pca = PCA(n_components=n_components)
-kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
 
 # Initialize empty lists to store results
-results = []
+results_silScore = []
 
 
 # Define a function to compute DBSCAN for a given parameter combination
@@ -173,20 +165,20 @@ def dbscan_cluster(min_samples):
     return (eps, min_samples, n_clusters_, n_noise_, score)
 
 
-
 # Create a Pool object
 with Pool() as pool:
     # Compute DBSCAN for all parameter combinations in parallel
-    results = pool.map(dbscan_cluster, min_samples_list)
+    results_silScore = pool.map(dbscan_cluster, min_samples_list)
     pool.close()
     pool.join()
 
 # Store the results in a pandas DataFrame
-df_results = pd.DataFrame(results, columns=['eps', 'min_samples',
-                                            'n_clusters', 'n_noise', 'score'])
+results_silScore = pd.DataFrame(results_silScore,
+                                columns=['eps', 'min_samples',
+                                         'n_clusters', 'n_noise', 'score'])
 
 # Find the parameter combination with the highest score
-best_row = df_results.iloc[df_results['score'].idxmax()]
+best_row = results_silScore.iloc[results_silScore['score'].idxmax()]
 best_params = (best_row['eps'], best_row['min_samples'],
                best_row['n_clusters'], best_row['n_noise'])
 best_score = best_row['score']
@@ -200,22 +192,21 @@ seconds = int((time.time() - starttime) % 60)
 print(f'DBSCAN grid search process took {minutes} minutes and '
       f'{seconds} seconds')
 
-# %%
-# Plot the results
-sns.set()
-sns.set_style("whitegrid")
-sns.set_context("paper")
-plt.figure(figsize=(10, 10))
-sns.scatterplot(x='eps', y='min_samples', hue='score', data=df_results)
-plt.title('DBSCAN parameter grid search')
-plt.xlabel('eps')
-plt.ylabel('min_samples')
-plt.show()
+# %% Plot the results of the grid search
+# # Plot the results
+# sns.set()
+# sns.set_style("whitegrid")
+# sns.set_context("paper")
+# plt.figure(figsize=(10, 10))
+# sns.scatterplot(x='eps', y='min_samples', hue='score', data=results_silScore)
+# plt.title('DBSCAN parameter grid search')
+# plt.xlabel('eps')
+# plt.ylabel('min_samples')
+# plt.show()
 
-# %%
-# plot increase in score with increasing min_samples
+# Plot increase in score with increasing min_samples
 plt.figure(figsize=(10, 10))
-sns.lineplot(x='min_samples', y='score', data=df_results)
+sns.lineplot(x='min_samples', y='score', data=results_silScore)
 plt.title('DBSCAN parameter grid search')
 plt.xlabel('min_samples')
 plt.ylabel('score')
@@ -225,14 +216,6 @@ plt.show()
 starttime = time.time()
 # Define the optimal min_samples value (acc. Sander's 1998)
 min_samples = (2*n_components-1)
-
-# Standardize the data
-scaler = StandardScaler()
-kmeans_data_scaled = scaler.fit_transform(kmeans_data)
-
-# Perform a PCA on kmeans_data
-pca = PCA(n_components=15)
-kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
 
 # Apply DBSCAN to cluster the data
 y_pred = DBSCAN(eps=eps, min_samples=min_samples,
@@ -250,7 +233,7 @@ print('eps: %f' % eps)
 print('min_samples: %d' % min_samples)
 # print the silhouette score
 print("Silhouette Coefficient: %0.4f"
-        % metrics.silhouette_score(kmeans_data_pca, labels)) 
+      % metrics.silhouette_score(kmeans_data_pca, labels))
 print('Estimated number of clusters: %d' % n_clusters_)
 print('Estimated number of noise points: %d' % n_noise_)
 
@@ -272,4 +255,101 @@ dbscan_noise = dbscan_output[dbscan_output['noise'] == True]
 
 print(f'DBSCAN process took {time.time() - starttime} seconds')
 
+# -----------------------------------------------------------------------------
+
+
+# %% Run DBSCAN, testing Calinski-Harabasz score instead of Silhouette score
+starttime = time.time()
+
+# Initialize empty lists to store results
+results_chScore = []
+
+
+# Define a function to compute DBSCAN for a given parameter combination
+def dbscan_cluster(min_samples):
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
+    labels = dbscan.fit_predict(kmeans_data_pca)
+    n_clusters_ = len(np.unique(labels[labels != -1]))
+    if n_clusters_ < 2:
+        CH_score = -1
+    # set score to a negative value if there is only one cluster
+    else:
+        CH_score = metrics.calinski_harabasz_score(kmeans_data_pca, labels)
+    n_noise_ = list(labels).count(-1)
+    print(f'eps={eps:.6f}, min_samples={min_samples:4d}, '
+          f'n_clusters={n_clusters_:3d}, n_noise={n_noise_:4d}, '
+          f'CH_score={CH_score:.3f}')
+    return (eps, min_samples, n_clusters_, n_noise_, CH_score)
+
+
+# Create a Pool object
+with Pool() as pool:
+    # Compute DBSCAN for all parameter combinations in parallel
+    results_chScore = pool.map(dbscan_cluster, min_samples_list)
+    pool.close()
+    pool.join()
+
+# Store the results in a pandas DataFrame
+results_chScore = pd.DataFrame(results_chScore,
+                               columns=['eps', 'min_samples', 'n_clusters',
+                                        'n_noise', 'CH_score'])
+
+results_chScore['CH_score'] = results_chScore['CH_score'].astype(float)
+
+# Find the parameter combination with the highest score
+best_row = results_chScore.iloc[results_chScore['CH_score'].idxmax()]
+best_params = (best_row['eps'], best_row['min_samples'],
+               best_row['n_clusters'], best_row['n_noise'])
+best_score = best_row['CH_score']
+print(f'Best parameter combination: eps={best_params[0]:.6f}, '
+      f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
+      f'n_noise={best_params[3]}, CH_score={best_score:.3f}')
+
+# Print the time the process took
+minutes = int((time.time() - starttime) / 60)
+seconds = int((time.time() - starttime) % 60)
+print(f'DBSCAN grid search process took {minutes} minutes and '
+      f'{seconds} seconds')
+
 # %%
+# plot increase in score with increasing min_samples
+plt.figure(figsize=(10, 10))
+sns.lineplot(x='min_samples', y='CH_score', data=results_chScore)
+plt.title('DBSCAN parameter grid search')
+plt.xlabel('min_samples')
+plt.ylabel('CH_score')
+plt.show()
+
+# %% Run best parameter DBSCAN
+starttime = time.time()
+# Define the optimal min_samples value (acc. Sander's 1998)
+min_samples = (2*n_components-1)
+
+# Apply DBSCAN to cluster the data
+y_pred = DBSCAN(eps=eps, min_samples=min_samples,
+                n_jobs=-1).fit(kmeans_data_pca)
+
+core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
+core_samples_mask[y_pred.core_sample_indices_] = True
+labels = y_pred.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('eps: %f' % eps)
+print('min_samples: %d' % min_samples)
+# print the silhouette score
+print("Calinski-Harabasz Score: %0.4f"
+      % metrics.calinski_harabasz_score(kmeans_data_pca, labels))
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+
+print(f'DBSCAN process took {time.time() - starttime} seconds')
+
+
+# %% End and print the total time of DBSCAN process
+minutes = int((time.time() - totaltime) / 60)
+seconds = int((time.time() - totaltime) % 60)
+print(f'DBSCAN process took {minutes} minutes and '
+      f'{seconds} seconds')
