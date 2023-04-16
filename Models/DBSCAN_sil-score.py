@@ -1,0 +1,275 @@
+# %% Import libraries for k-means clustering algorithm
+
+import time
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+from sklearn.cluster import DBSCAN
+from sklearn import metrics
+from multiprocessing import Pool
+from kneed import KneeLocator
+
+
+# %% Test out the PCA and optimal number of principal components
+
+# Scale the data using StandardScaler
+scaler = StandardScaler()
+kmeans_data_scaled = scaler.fit_transform(kmeans_data)
+
+# Perform a PCA on kmeans_data
+pca = PCA(n_components=24)
+kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
+
+# # Method 1: Scree plot
+# # Plot the eigenvalues of the principal components
+# plt.plot(range(1, pca.n_components_ + 1),
+#          pca.explained_variance_ratio_, 'ro-', linewidth=2)
+# plt.title('Scree Plot')
+# plt.xlabel('Principal Component')
+# plt.ylabel('Eigenvalue')
+# plt.show()
+
+# Method 2: Cumulative proportion of variance explained
+# Calculate the cum. proportion of variance explained
+cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
+
+# Plot the cum. proportion of variance explained, with the 95% threshold
+plt.plot(range(1, pca.n_components_ + 1),
+         cumulative_variance_ratio, 'ro-', linewidth=2)
+plt.axhline(y=0.95, color='b', linestyle='--')
+plt.title('Cumulative Proportion of Variance Explained')
+plt.xlabel('Number of Principal Components')
+plt.ylabel('Cumulative Proportion of Variance Explained')
+plt.show()
+
+# retrieve the number of components that explain 90% of the variance
+n_components = np.argmax(cumulative_variance_ratio >= 0.95) + 1
+print(f'{n_components} principal components explain 95% of the variance')
+
+# %% Calculate the K-Distance Graph
+
+# Perform a PCA on kmeans_data
+pca = PCA(n_components=15)
+kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
+
+# Calculate the distance between each point and its kth nearest neighbor
+neigh = NearestNeighbors(n_neighbors=n_components)
+nbrs = neigh.fit(kmeans_data_pca)
+distances, indices = nbrs.kneighbors(kmeans_data_pca)
+
+# Plot the k-distance graph
+distances = np.sort(distances, axis=0)
+distances = distances[:, 1]
+plt.figure(figsize=(20, 10))
+plt.plot(distances, 'ro-', linewidth=2)
+plt.title('K-Distance Graph')
+plt.xlabel('Data Point sorted by distance')
+plt.ylabel('Epsilon (distance to kth nearest neighbor)')
+plt.show()
+
+# # Zoom in on the elbow of the graph
+# plt.figure(figsize=(20, 10))
+# plt.plot(distances, 'ro-', linewidth=2)
+# plt.title('K-Distance Graph')
+# plt.xlabel('Data Point sorted by distance')
+# plt.ylabel('Epsilon (distance to kth nearest neighbor)')
+# plt.xlim(45000, 53000)
+# plt.ylim(0, 25)
+# plt.show()
+
+# Inlcude index to the number of observation to array
+distances = np.column_stack((np.arange(0, len(distances)), distances))
+
+# %% Calculate the maximum curvature point of the k-distance graph
+kneedle = KneeLocator(distances[:, 0], distances[:, 1],
+                      curve='convex', direction='increasing')
+
+print(round(kneedle.elbow, 0))
+print(round(kneedle.elbow_y, 3))
+
+
+
+# Plot the k-distance graph with the knee point (zoomed in)
+plt.figure(figsize=(10, 10))
+plt.plot(distances[:, 0], distances[:, 1], 'ro-', linewidth=2)
+plt.axvline(x=kneedle.elbow, color='b', linestyle='--')
+plt.axhline(y=kneedle.elbow_y, color='b', linestyle='--')
+plt.text(kneedle.elbow + 100, kneedle.elbow_y + 0.2,
+         f'elbow point ({round(kneedle.elbow, 0)}, '
+         f'{round(kneedle.elbow_y, 3)})', fontsize=12)
+plt.title('K-Distance Graph')
+plt.xlabel('Data Point sorted by distance')
+plt.ylabel('Epsilon (distance to kth nearest neighbor)')
+plt.xlim(kneedle.elbow - 500, kneedle.elbow + 500)
+plt.ylim(kneedle.elbow_y - 1.5, kneedle.elbow_y + 1.5)
+plt.show()
+
+# %% Define list of parameter values to test
+
+# Define optimal epsilon value
+eps = round(kneedle.elbow_y, 3)
+
+# Define the optimal min_samples value (acc. Sander's 1998)
+min_samples_list = list(range(n_components, (2*n_components-1)+5, 1)) 
+
+# ---------------------------------------------------------------------
+# lower range of eps
+
+# closing in on best silhouette score
+# eps_list_l = list(np.arange(1.4, 3.1, 0.1))
+# min_samples_list_l = list(range(60, 201, 10))
+
+# eps_list_l = list(np.arange(1.8, 2.2, 0.01))
+# min_samples_list_l = list(range(160, 211, 2))
+
+# eps_list_l = list(np.arange(1.90, 1.92, 0.01))
+# min_samples_list_l = list(range(193, 204, 1))
+
+# ---------------------------------------------------------------------------------
+# upper range of eps
+
+# closing in on best silhouette score
+# eps_list_u = list(np.arange(4, 10.1, 0.5))
+# min_samples_list_u = list(range(10, 100, 10))
+
+# eps_list_u = list(np.arange(4, 5, 0.1))
+# min_samples_list_u = list(range(50, 80, 5))
+
+# eps_list_u = list(np.arange(3.8, 4.2, 0.01))
+# min_samples_list_u = list(range(20, 30, 1))
+
+# %% Run DBSCAN, testing the different paramter combinations (inital run)
+starttime = time.time()
+scaler = StandardScaler()
+kmeans_data_scaled = scaler.fit_transform(kmeans_data)
+
+
+# Perform a PCA on kmeans_data
+pca = PCA(n_components=n_components)
+kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
+
+# Initialize empty lists to store results
+results = []
+
+
+# Define a function to compute DBSCAN for a given parameter combination
+def dbscan_cluster(min_samples):
+    dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
+    labels = dbscan.fit_predict(kmeans_data_pca)
+    n_clusters_ = len(np.unique(labels[labels != -1]))
+    if n_clusters_ < 2:
+        score = -1
+    # set score to a negative value if there is only one cluster
+    else:
+        score = metrics.silhouette_score(kmeans_data_pca, labels)
+    n_noise_ = list(labels).count(-1)
+    print(f'eps={eps:.6f}, min_samples={min_samples:4d}, '
+          f'n_clusters={n_clusters_:3d}, n_noise={n_noise_:4d}, '
+          f'score={score:.3f}')
+    return (eps, min_samples, n_clusters_, n_noise_, score)
+
+
+
+# Create a Pool object
+with Pool() as pool:
+    # Compute DBSCAN for all parameter combinations in parallel
+    results = pool.map(dbscan_cluster, min_samples_list)
+    pool.close()
+    pool.join()
+
+# Store the results in a pandas DataFrame
+df_results = pd.DataFrame(results, columns=['eps', 'min_samples',
+                                            'n_clusters', 'n_noise', 'score'])
+
+# Find the parameter combination with the highest score
+best_row = df_results.iloc[df_results['score'].idxmax()]
+best_params = (best_row['eps'], best_row['min_samples'],
+               best_row['n_clusters'], best_row['n_noise'])
+best_score = best_row['score']
+print(f'Best parameter combination: eps={best_params[0]:.6f}, '
+      f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
+      f'n_noise={best_params[3]}, score={best_score:.3f}')
+
+# Print the time the process took
+minutes = int((time.time() - starttime) / 60)
+seconds = int((time.time() - starttime) % 60)
+print(f'DBSCAN grid search process took {minutes} minutes and '
+      f'{seconds} seconds')
+
+# %%
+# Plot the results
+sns.set()
+sns.set_style("whitegrid")
+sns.set_context("paper")
+plt.figure(figsize=(10, 10))
+sns.scatterplot(x='eps', y='min_samples', hue='score', data=df_results)
+plt.title('DBSCAN parameter grid search')
+plt.xlabel('eps')
+plt.ylabel('min_samples')
+plt.show()
+
+# %%
+# plot increase in score with increasing min_samples
+plt.figure(figsize=(10, 10))
+sns.lineplot(x='min_samples', y='score', data=df_results)
+plt.title('DBSCAN parameter grid search')
+plt.xlabel('min_samples')
+plt.ylabel('score')
+plt.show()
+
+# %% Run best parameter DBSCAN
+starttime = time.time()
+# Define the optimal min_samples value (acc. Sander's 1998)
+min_samples = (2*n_components-1)
+
+# Standardize the data
+scaler = StandardScaler()
+kmeans_data_scaled = scaler.fit_transform(kmeans_data)
+
+# Perform a PCA on kmeans_data
+pca = PCA(n_components=15)
+kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
+
+# Apply DBSCAN to cluster the data
+y_pred = DBSCAN(eps=eps, min_samples=min_samples,
+                n_jobs=-1).fit(kmeans_data_pca)
+
+core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
+core_samples_mask[y_pred.core_sample_indices_] = True
+labels = y_pred.labels_
+
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+n_noise_ = list(labels).count(-1)
+
+print('eps: %f' % eps)
+print('min_samples: %d' % min_samples)
+# print the silhouette score
+print("Silhouette Coefficient: %0.4f"
+        % metrics.silhouette_score(kmeans_data_pca, labels)) 
+print('Estimated number of clusters: %d' % n_clusters_)
+print('Estimated number of noise points: %d' % n_noise_)
+
+# Invert the scaling applied by StandardScaler
+dbscan_output = scaler.inverse_transform(kmeans_data_scaled)
+
+# # Invert the PCA transformation
+# kmeans_data_pca_inverted = pca.inverse_transform(kmeans_data_pca)
+
+# Convert the kmeans_output array to a pandas DataFrame
+dbscan_output = pd.DataFrame(dbscan_output, columns=kmeans_data.columns)
+
+# Add the labels column to the kmeans_output
+dbscan_output['labels'] = labels
+dbscan_output['noise'] = dbscan_output['labels'] == -1
+
+# Filter out the a dat frame with only noise points
+dbscan_noise = dbscan_output[dbscan_output['noise'] == True]
+
+print(f'DBSCAN process took {time.time() - starttime} seconds')
+
+# %%
