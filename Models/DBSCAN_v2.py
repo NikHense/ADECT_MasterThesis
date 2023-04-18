@@ -182,9 +182,9 @@ best_row = results_silScore.iloc[results_silScore['score'].idxmax()]
 best_params = (best_row['eps'], best_row['min_samples'],
                best_row['n_clusters'], best_row['n_noise'])
 best_score = best_row['score']
-print(f'Best parameter combination: eps={best_params[0]:.6f}, '
-      f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
-      f'n_noise={best_params[3]}, score={best_score:.3f}')
+# print(f'Best parameter combination: eps={best_params[0]:.6f}, '
+#       f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
+#       f'n_noise={best_params[3]}, score={best_score:.3f}')
 
 # Print the time the process took
 minutes = int((time.time() - starttime) / 60)
@@ -257,7 +257,6 @@ print(f'DBSCAN process took {time.time() - starttime} seconds')
 
 # -----------------------------------------------------------------------------
 
-
 # %% Run DBSCAN, testing Calinski-Harabasz score instead of Silhouette score
 starttime = time.time()
 
@@ -301,9 +300,9 @@ best_row = results_chScore.iloc[results_chScore['CH_score'].idxmax()]
 best_params = (best_row['eps'], best_row['min_samples'],
                best_row['n_clusters'], best_row['n_noise'])
 best_score = best_row['CH_score']
-print(f'Best parameter combination: eps={best_params[0]:.6f}, '
-      f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
-      f'n_noise={best_params[3]}, CH_score={best_score:.3f}')
+# print(f'Best parameter combination: eps={best_params[0]:.6f}, '
+#       f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
+#       f'n_noise={best_params[3]}, CH_score={best_score:.3f}')
 
 # Print the time the process took
 minutes = int((time.time() - starttime) / 60)

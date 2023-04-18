@@ -56,8 +56,8 @@ from multiprocessing import Pool
 
 # %% Define list of parameter values to test
 
-eps_list_u = list(np.arange(0.5, 8.1, 0.5)) # initial parameters
-min_samples_list_u = list(range(25, 401, 25)) # initial parameters
+eps_list_u = list(np.arange(0.5, 7.1, 0.5)) # initial parameters
+min_samples_list_u = list(range(25, 301, 25)) # initial parameters
 
 # ---------------------------------------------------------------------
 # lower range of eps
@@ -181,7 +181,7 @@ def dbscan_cluster(params):
         score = metrics.silhouette_score(kmeans_data_pca, labels)
     n_noise_ = list(labels).count(-1)
     print(f'eps={eps:.6f}, min_samples={min_samples:4d}, n_clusters={n_clusters_:3d}, n_noise={n_noise_:4d}, score={score:.3f}')
-    return eps, min_samples, score, n_clusters_, n_noise_
+    return score
 
 
 # Define a list of parameter combinations to test
@@ -211,8 +211,6 @@ seconds = int((time.time() - starttime) % 60)
 print(f'DBSCAN (upper grid) search process took {minutes} minutes and {seconds} seconds')
 
 # %% Get the list with the scores, their parameters, n_clusters and n_noise
-results_grid = list(zip(scores_db, param_list, n_clusters_, n_noise_))
-
 top_30_u = sorted(zip(scores_db, param_list), reverse=True)[:30]
 top_30_u
 
@@ -226,6 +224,10 @@ plt.xlabel('eps_upper')
 plt.ylabel('min_samples_upper')
 plt.title('Top 30 DBSCAN scores (upper grid)')
 plt.show()
+
+
+# %% 
+scores_all = sorted(zip(scores_db, param_list), reverse=True)
 
 # %% Run best parameter (lower range of eps)
 starttime = time.time()

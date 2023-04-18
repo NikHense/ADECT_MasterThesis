@@ -1,7 +1,7 @@
 # %% Import libraries for isolation forest
 # import os
 import time
-# import numpy as np
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import IsolationForest
@@ -9,6 +9,11 @@ from sklearn.ensemble import IsolationForest
 from numpy import bincount
 from multiprocessing import Pool
 import seaborn as sns
+from kneed import KneeLocator
+from statistics import mean
+
+# %% Start timer
+totaltime = time.time()
 
 # # %% Select columns for isolation forest
 # if_data = total_payments[['Payment_Number',
@@ -75,72 +80,43 @@ import seaborn as sns
 #                            'Year-Month', 'Mandant_encoded']]
 
 # if_data.info()
-# %% Create the inital isolation forest function
-# isof = IsolationForest(max_samples='auto', contamination='auto')
+
+# # %% Create the inital isolation forest function
+# starttime = time.time()
+# isof = IsolationForest(n_estimators=1000, max_samples=10000,
+#                        contamination='auto', random_state=42,
+#                        verbose=0, n_jobs=-1)
 
 # isof.fit(if_data)
 
-# isof.decision_function(if_data)
+# scores1 = isof.decision_function(if_data)
 
-# y_pred = isof.predict(if_data)
+# anomaly1 = isof.predict(if_data)
 
-
-# # Results of the isolation forest
-# print(y_pred)
-
-# n_outliers = bincount((y_pred == -1).astype(int))[1]
-# n_inliers = bincount((y_pred == 1).astype(int))[1]
+# # print(y_pred)
+# #  Results of the isolation forest
+# n_outliers = bincount((anomaly1 == -1).astype(int))[1]
+# n_inliers = bincount((anomaly1 == 1).astype(int))[1]
 
 # print("Number of outliers: ", n_outliers)
 # print("Number of inliers: ", n_inliers)
-# %% Modify the isolation forest function
-starttime = time.time()
-isof = IsolationForest(n_estimators=1000, max_samples=10000,
-                       contamination='auto', random_state=42,
-                       verbose=0, n_jobs=-1)
+# print(f'Database read process took {time.time() - starttime} seconds')
+# # %% add the scores1 and anomaly1 values to the respective rows
+# # in the data frame to position 0
+# if_data.insert(0, "scores1", scores1, True)
+# if_data.insert(1, "anomaly1", anomaly1, True)
 
-isof.fit(if_data)
-
-scores1 = isof.decision_function(if_data)
-
-anomaly1 = isof.predict(if_data)
-
-# print(y_pred)
-#  Results of the isolation forest
-n_outliers = bincount((anomaly1 == -1).astype(int))[1]
-n_inliers = bincount((anomaly1 == 1).astype(int))[1]
-
-print("Number of outliers: ", n_outliers)
-print("Number of inliers: ", n_inliers)
-print(f'Database read process took {time.time() - starttime} seconds')
-# %% add the scores1 and anomaly1 values to the respective rows
-# in the data frame to position 0
-if_data.insert(0, "scores1", scores1, True)
-if_data.insert(1, "anomaly1", anomaly1, True)
-
-
-# # %% Get a subsample of the data frame with same distribution of anomalies
-# # as the original data frame
-# subsample = if_data[if_data['anomaly1']
-#                            == -1].sample(n=10, random_state=42)
-# subsample = subsample.append(if_data[
-#     if_data['anomaly1'] == 1].sample(n=10, random_state=42))
-
-# # get a subsample1 where all blocked vendor are inlcuded
-# # (blocked vendor is not 0)
-# subsample1 = if_data[if_data['Blocked_Vendor']
-#                             != 0].sample(n=125, random_state=42)
-
-# %% Execute grid search for isolation forest (!!! 7 min running time !!!)
+# %% Execute grid search for isolation forest (!!! 8 min running time !!!)
 starttime = time.time()
 
 # Define list of parameter values to test
-n_estimators_list = list(range(500, 4001, 500))
-max_samples_list = list(range(1000, len(if_data), 1000))
+n_estimators_list = list(range(100, 2002, 100))
+max_samples_list = list(range(500, len(if_data), 500))
 
 # Initialize empty lists to store results
 results = []
 params = []
+
 
 # Define a function to fit the IsolationForest model and compute the results
 def fit_isof(params):
@@ -190,7 +166,8 @@ iso_output.to_csv('iso_output.csv', index=False)
 # Print the time the process took
 minutes = int((time.time() - starttime) / 60)
 seconds = int((time.time() - starttime) % 60)
-print(f'Isolation Forest grid search process took {minutes} minutes and {seconds} seconds')
+print(f'Isolation Forest grid search process took '
+      f'{minutes} minutes and {seconds} seconds')
 
 # %% Evaluate grid search of isolation forest by plotting the results
 # Plot the results of the grid search in 2D
@@ -202,34 +179,18 @@ plt.ylabel('Number of outliers')
 plt.xlabel('Number of max_samples')
 plt.show()
 
-# Plot the results of the grid search in 3D
-fig = plt.figure(figsize=(10, 6))
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(iso_output['n_estimators'], iso_output['max_samples'],
-           iso_output['n_outliers'], c=iso_output['n_outliers'],
-           cmap='viridis', linewidth=0.5)
-ax.set_xlabel('n_estimators')
-ax.set_ylabel('max_samples')
-ax.set_zlabel('n_outliers')
-ax.set_title('Number of outliers for different parameter combinations')
-plt.show()
+# # Plot the results of the grid search in 3D
+# fig = plt.figure(figsize=(10, 6))
+# ax = fig.add_subplot(111, projection='3d')
+# ax.scatter(iso_output['n_estimators'], iso_output['max_samples'],
+#            iso_output['n_outliers'], c=iso_output['n_outliers'],
+#            cmap='viridis', linewidth=0.5)
+# ax.set_xlabel('n_estimators')
+# ax.set_ylabel('max_samples')
+# ax.set_zlabel('n_outliers')
+# ax.set_title('Number of outliers for different parameter combinations')
+# plt.show()
 
-# %% Identify the average number of outliers for all parameter combinations
-print(iso_output['n_outliers'].mean())
-
-# excluding the Top and Bottom 5 % of the results
-iso_output1 = iso_output.sort_values(by=['n_outliers'])
-iso_output1 = iso_output.iloc[round(len(iso_output) * 0.05):
-                              round(len(iso_output) * 0.95)]
-print(iso_output1['n_outliers'].mean())
-
-# Give me top 10 combination of parameters that is closest
-# to the average number of outliers
-top10 = iso_output.loc[(iso_output['n_outliers'] -
-                        iso_output['n_outliers'].mean()
-                        ).abs().argsort()[:10]]
-
-print(top10)
 # %% Plot average number of outliers per max_samples
 iso_output.groupby('max_samples')['n_outliers'].mean().plot()
 plt.title('Average number of outliers per max_samples')
@@ -237,4 +198,69 @@ plt.ylabel('Average number of outliers')
 plt.xlabel('Number of max_samples')
 plt.show()
 
+# %%
+# %% Calculate the maximum curvature point of the k-distance graph
+# Print the list of average number of outliers per max_samples
+avg_outlier = iso_output.groupby('max_samples')['n_outliers'].mean()
+avg_outlier = np.array(avg_outlier)
+
+# Create array that goes from 1000 to the length of avg_outlier in 1000 steps
+x = np.arange(1000, (len(avg_outlier)+1)*1000, 1000)
+
+# %%
+kneedle = KneeLocator(x, avg_outlier,
+                      curve='convex', direction='decreasing')
+
+print(round(kneedle.elbow, 0))
+print(round(kneedle.elbow_y, 3))
+
+# Plot the k-distance graph with the knee point (zoomed in)
+plt.figure(figsize=(10, 10))
+plt.plot(x, avg_outlier, 'ro-', linewidth=2)
+plt.axvline(x=kneedle.elbow, color='b', linestyle='--')
+plt.axhline(y=kneedle.elbow_y, color='b', linestyle='--')
+plt.text(kneedle.elbow + 500, kneedle.elbow_y + 50,
+         f'elbow point ({round(kneedle.elbow, 0)}, '
+         f'{round(kneedle.elbow_y, 3)})', fontsize=12)
+plt.title('Average number of outliers per max_samples')
+plt.xlabel('Number of max_samples')
+plt.ylabel('Average number of outliers')
+plt.xlim(kneedle.elbow - 10000, kneedle.elbow + 10000)
+plt.ylim(kneedle.elbow_y - 500, kneedle.elbow_y + 1000)
+plt.show()
+# %% Create the isolation forest with tuned parameter
+
+starttime = time.time()
+
+avg_n_estimator = mean(n_estimators_list)
+
+isof2 = IsolationForest(n_estimators=avg_n_estimator, max_samples=kneedle.elbow,
+                       contamination='auto', random_state=42,
+                       verbose=0, n_jobs=-1)
+
+isof2.fit(if_data)
+
+scores1 = isof2.decision_function(if_data)
+
+anomaly1 = isof2.predict(if_data)
+
+# print(y_pred)
+#  Results of the isolation forest
+n_outliers = bincount((anomaly1 == -1).astype(int))[1]
+n_inliers = bincount((anomaly1 == 1).astype(int))[1]
+
+print("Number of outliers: ", n_outliers)
+print("Number of inliers: ", n_inliers)
+print(f'Database read process took {time.time() - starttime} seconds')
+
+# %% add the scores1 and anomaly1 values to the respective rows
+# in the data frame to position 0
+if_data.insert(0, "scores1", scores1, True)
+if_data.insert(1, "anomaly1", anomaly1, True)
+
+# %% End and print the total time of Isolation Forest process
+minutes = int((time.time() - totaltime) / 60)
+seconds = int((time.time() - totaltime) % 60)
+print(f'Isolation Forest process took {minutes} minutes and '
+      f'{seconds} seconds')
 # %%
