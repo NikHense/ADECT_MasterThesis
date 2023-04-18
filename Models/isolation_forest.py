@@ -160,8 +160,8 @@ iso_output = pd.DataFrame({'n_estimators': [n_estimators for _, _,
                            'n_inliers': [n_inliers for _, n_inliers, _,
                                          _ in results], })
 
-# Create a new csv file form data frame
-iso_output.to_csv('iso_output.csv', index=False)
+# # Create a new csv file form data frame
+# iso_output.to_csv('iso_output.csv', index=False)
 
 # Print the time the process took
 minutes = int((time.time() - starttime) / 60)
@@ -205,7 +205,7 @@ avg_outlier = iso_output.groupby('max_samples')['n_outliers'].mean()
 avg_outlier = np.array(avg_outlier)
 
 # Create array that goes from 1000 to the length of avg_outlier in 1000 steps
-x = np.arange(1000, (len(avg_outlier)+1)*1000, 1000)
+x = max_samples_list
 
 # %%
 kneedle = KneeLocator(x, avg_outlier,
@@ -228,39 +228,52 @@ plt.ylabel('Average number of outliers')
 plt.xlim(kneedle.elbow - 10000, kneedle.elbow + 10000)
 plt.ylim(kneedle.elbow_y - 500, kneedle.elbow_y + 1000)
 plt.show()
+
 # %% Create the isolation forest with tuned parameter
 
 starttime = time.time()
 
 avg_n_estimator = mean(n_estimators_list)
+max_samples = int(kneedle.elbow)
 
-isof2 = IsolationForest(n_estimators=avg_n_estimator, max_samples=kneedle.elbow,
+isof2 = IsolationForest(n_estimators=avg_n_estimator, max_samples=max_samples,
                        contamination='auto', random_state=42,
                        verbose=0, n_jobs=-1)
 
 isof2.fit(if_data)
 
-scores1 = isof2.decision_function(if_data)
+scores = isof2.decision_function(if_data)
 
-anomaly1 = isof2.predict(if_data)
+anomaly = isof2.predict(if_data)
 
-# print(y_pred)
+
 #  Results of the isolation forest
-n_outliers = bincount((anomaly1 == -1).astype(int))[1]
-n_inliers = bincount((anomaly1 == 1).astype(int))[1]
+n_outliers = bincount((anomaly == -1).astype(int))[1]
+n_inliers = bincount((anomaly == 1).astype(int))[1]
 
 print("Number of outliers: ", n_outliers)
 print("Number of inliers: ", n_inliers)
 print(f'Database read process took {time.time() - starttime} seconds')
 
-# %% add the scores1 and anomaly1 values to the respective rows
-# in the data frame to position 0
-if_data.insert(0, "scores1", scores1, True)
-if_data.insert(1, "anomaly1", anomaly1, True)
+# %%
+# Convert the dbscan_output array to a pandas DataFrame
+if_output = pd.DataFrame(if_data, columns=if_data.columns)
+
+# Add the labels column to the dbscan_output at position 0
+if_output.insert(0, 'INDEX', if_data.index)
+if_output.insert(1, 'labels', anomaly, True)
+if_output.insert(2, "scores", scores, True)
+
+# Filter out the a data frame with only noise points & clean
+if_noise = if_output[if_output['labels'] == -1]
 
 # %% End and print the total time of Isolation Forest process
 minutes = int((time.time() - totaltime) / 60)
 seconds = int((time.time() - totaltime) % 60)
 print(f'Isolation Forest process took {minutes} minutes and '
       f'{seconds} seconds')
+
+
+
+
 # %%

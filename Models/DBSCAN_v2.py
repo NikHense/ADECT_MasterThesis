@@ -1,4 +1,4 @@
-# %% Import libraries for k-means clustering algorithm
+# %% Import libraries for DBSCAN algorithm
 import time
 import numpy as np
 import pandas as pd
@@ -22,7 +22,7 @@ scaler = StandardScaler()
 kmeans_data_scaled = scaler.fit_transform(kmeans_data)
 
 # Perform a PCA on kmeans_data
-pca = PCA(n_components=24)
+pca = PCA(n_components=len(kmeans_data.columns))
 kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
 
 # # Method 1: Scree plot
@@ -48,13 +48,13 @@ plt.ylabel('Cumulative Proportion of Variance Explained')
 plt.show()
 
 # retrieve the number of components that explain 90% of the variance
-n_components = np.argmax(cumulative_variance_ratio >= 0.95) + 1
+n_components = np.argmax(cumulative_variance_ratio >= 0.95)
 print(f'{n_components} principal components explain 95% of the variance')
 
 # %% Calculate the K-Distance Graph
 
 # Perform a PCA on kmeans_data
-pca = PCA(n_components=15)
+pca = PCA(n_components=np.argmax(cumulative_variance_ratio >= 0.95))
 kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
 
 # Calculate the distance between each point and its kth nearest neighbor
@@ -153,7 +153,7 @@ def dbscan_cluster(min_samples):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
     labels = dbscan.fit_predict(kmeans_data_pca)
     n_clusters_ = len(np.unique(labels[labels != -1]))
-    if n_clusters_ < 2:
+    if n_clusters_ < 1:
         score = -1
     # set score to a negative value if there is only one cluster
     else:
@@ -229,29 +229,13 @@ labels = y_pred.labels_
 n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 n_noise_ = list(labels).count(-1)
 
-print('eps: %f' % eps)
+print('eps: %0.3f' % eps)
 print('min_samples: %d' % min_samples)
 # print the silhouette score
 print("Silhouette Coefficient: %0.4f"
       % metrics.silhouette_score(kmeans_data_pca, labels))
 print('Estimated number of clusters: %d' % n_clusters_)
 print('Estimated number of noise points: %d' % n_noise_)
-
-# Invert the scaling applied by StandardScaler
-dbscan_output = scaler.inverse_transform(kmeans_data_scaled)
-
-# # Invert the PCA transformation
-# kmeans_data_pca_inverted = pca.inverse_transform(kmeans_data_pca)
-
-# Convert the kmeans_output array to a pandas DataFrame
-dbscan_output = pd.DataFrame(dbscan_output, columns=kmeans_data.columns)
-
-# Add the labels column to the kmeans_output
-dbscan_output['labels'] = labels
-dbscan_output['noise'] = dbscan_output['labels'] == -1
-
-# Filter out the a dat frame with only noise points
-dbscan_noise = dbscan_output[dbscan_output['noise'] == True]
 
 print(f'DBSCAN process took {time.time() - starttime} seconds')
 
@@ -269,7 +253,7 @@ def dbscan_cluster(min_samples):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
     labels = dbscan.fit_predict(kmeans_data_pca)
     n_clusters_ = len(np.unique(labels[labels != -1]))
-    if n_clusters_ < 2:
+    if n_clusters_ < 1:
         CH_score = -1
     # set score to a negative value if there is only one cluster
     else:
@@ -336,7 +320,7 @@ labels = y_pred.labels_
 n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 n_noise_ = list(labels).count(-1)
 
-print('eps: %f' % eps)
+print('eps: %0.3f' % eps)
 print('min_samples: %d' % min_samples)
 # print the silhouette score
 print("Calinski-Harabasz Score: %0.4f"
@@ -345,10 +329,59 @@ print('Estimated number of clusters: %d' % n_clusters_)
 print('Estimated number of noise points: %d' % n_noise_)
 
 print(f'DBSCAN process took {time.time() - starttime} seconds')
+# %%
+# Invert the scaling applied by StandardScaler
+dbscan_output = scaler.inverse_transform(kmeans_data_scaled)
+
+# # Invert the PCA transformation
+# kmeans_data_pca_inverted = pca.inverse_transform(kmeans_data_pca)
+
+# Convert the dbscan_output array to a pandas DataFrame
+dbscan_output = pd.DataFrame(dbscan_output, columns=kmeans_data.columns)
+
+# Add the labels column to the dbscan_output at position 0
+dbscan_output.insert(0, 'INDEX', kmeans_data.index)
+dbscan_output.insert(1, 'labels', labels)
+dbscan_output.insert(2, 'noise', dbscan_output['labels'] == -1)
+
+
+# Filter out the a data frame with only noise points & clean
+dbscan_noise = dbscan_output[dbscan_output['noise'] == True]
+dbscan_noise['Line_Number'] = dbscan_noise['Line_Number'].round(0)
 
 
 # %% End and print the total time of DBSCAN process
 minutes = int((time.time() - totaltime) / 60)
 seconds = int((time.time() - totaltime) % 60)
-print(f'DBSCAN process took {minutes} minutes and '
+print(f' Total DBSCAN process took {minutes} minutes and '
       f'{seconds} seconds')
+
+
+# %% Check wheter dbscan_noise points are in if_noise based on index
+
+# assuming both dataframes have columns called 'index'
+merged = pd.merge(dbscan_noise, if_noise, on='INDEX', how='inner')
+matching_obs = merged['INDEX'].tolist()
+
+# Calculate number of noise points from dbscan_noise that are in if_noise
+print(len(matching_obs),
+      f'of {len(dbscan_noise)} noise points in total are similar')
+print('Percentage: ',
+      round(len(matching_obs)/len(dbscan_noise)*100, 2), '%')
+ 
+
+# %%
+# assuming both dataframes have columns called 'index'
+merged_outer = pd.merge(dbscan_noise, if_noise, on='INDEX', how='outer', indicator=True)
+
+# get rows that are only in one of the dataframes
+not_in_both = merged_outer.loc[merged_outer['_merge'].isin(['left_only', 'right_only'])]
+
+# Calculate number of noise points from left_only and right_only
+left_only = not_in_both.loc[not_in_both['_merge'].isin(['left_only'])]
+right_only = not_in_both.loc[not_in_both['_merge'].isin(['right_only'])]
+print('Only in dbscan_noise: ', len(left_only))
+print('Only in if_noise: ', len(right_only))
+
+
+# %%
