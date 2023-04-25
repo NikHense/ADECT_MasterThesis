@@ -2,9 +2,12 @@
 import os
 import pandas as pd
 import numpy as np
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# import time
+import matplotlib.pyplot as plt
+import seaborn as sns
+import scipy.stats as stats
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 # import datetime
 # import json
 # import requests
@@ -49,6 +52,12 @@ total_payments['Vendor_IBAN_BIC'] = total_payments['Vendor_IBAN']
 # total_payments.insert(11, 'Vendor_IBAN_BIC',
 #                       total_payments['Vendor_IBAN_BIC'])
 
+# Combine Country_Region_Code and Vendor_Bank_Origin
+# total_payments['Vendor_Bank_Origin'] = total_payments['Vendor_Bank_Origin'].astype(str)
+# total_payments['Country_Region_Code'] = total_payments['Country_Region_Code'].astype(str)
+# total_payments['Country_Codes'] = total_payments['Country_Region_Code']
+# + total_payments['Vendor_Bank_Origin']
+
 # %% Change data type of specific columns
 # Change data type to integer type
 int_cols = ['Vendor_Number']
@@ -56,10 +65,10 @@ for col in int_cols:
     total_payments[col] = total_payments[col].astype(int)
 
 # Change string data type to categorical values
-cat_cols = ['Payment_Number', 'Object_Number', 'Country_Region_Code',
+cat_cols = ['Payment_Number', 'Object_Number',
             'Payment_Method_Code', 'Customer_IBAN',
-            'Vendor_Bank_Origin', 'Vendor_IBAN_BIC',
-            'Review_Status', 'Created_By', 'Source_System',  'Mandant']
+            'Vendor_IBAN_BIC', 'Vendor_Bank_Origin', 'Country_Region_Code',
+            'Created_By', 'Source_System', 'Mandant']
 for col in cat_cols:
     total_payments[col] = total_payments[col].astype('category')
 
@@ -70,13 +79,13 @@ for col in cat_cols:
 
 # Convert data type to float
 float_cols = ['Amount_Applied', 'Amount_Initial', 'Discount_Applied',
-              'Discount_Rate', 'Discount_Possible']
+              'Discount_Rate']
 
 for col in float_cols:
     total_payments[col] = total_payments[col].astype(float)
 
 # Convert data type to datetime
-date_cols = ['Posting_Date', 'Due_Date', 'Year-Month']
+date_cols = ['Posting_Date', 'Due_Date']
 for col in date_cols:
     total_payments[col] = pd.to_datetime(total_payments[col])
 
@@ -90,91 +99,116 @@ empty_cells = total_payments.isna().sum()
 # Print the result
 print(empty_cells)
 
-# %% Select columns for algortims
-total_payments = total_payments[['Payment_Number',
-                                 'Gen_Jnl_Line_Number',
-                                 'Line_Number', 'ID_Vendor_Entry',
-                                 'Object_Number', 'Vendor_Number',
-                                 'Country_Region_Code', 'Amount_Applied',
-                                 'Amount_Initial', 'Discount_Applied',
-                                 'Discount_Allowed', 'Discount_Rate',
-                                 'Discount_Possible', 'Payment_Method_Code',
-                                 'Customer_IBAN', 'Vendor_IBAN_BIC',
-                                 'Vendor_Bank_Origin', 'Posting_Date',
-                                 'Due_Date', 'Entry_Cancelled',
-                                 'Blocked_Vendor', 'Review_Status',
-                                 'Created_By', 'Source_System',
-                                 'Year-Month', 'Mandant']]
-# include index column in data frame for isolation forest
-# data_IsoForest = data_IsoForest.reset_index()
-
-# %% Print out the info of data frame
-total_payments.info()
-
-# Show the decoded DataFrame
-print(total_payments)
-
-# %% Convert the categories of to distinct integers using cat.codes
-cat_cols = ['Payment_Number', 'Object_Number',
-            'Country_Region_Code', 'Payment_Method_Code',
-            'Customer_IBAN', 'Vendor_Bank_Origin', 'Vendor_IBAN_BIC',
-            'Created_By',  'Mandant']
-for col in cat_cols:
-    total_payments[col+'_encoded'] = total_payments[col].cat.codes
-
-
 # %% Create a binary encoding column
 # for 'Review_Status' and 'Source_System' having 0 and 1
-bin_cols = ['Review_Status', 'Source_System']
-for col in bin_cols:
-    total_payments[col+'_encoded'] = total_payments[col].cat.codes
-
-# %% Convert 'Posting_Date' and 'Year-month' to integer
-total_payments['Posting_Date'] = total_payments[
-    'Posting_Date'].dt.strftime('%Y%m%d').astype(int)
-total_payments['Year-Month'] = total_payments['Year-Month'].dt.strftime(
-    '%Y%m').astype(int)
+total_payments['Source_System_encoded'] = total_payments['Source_System'].replace({'BFSN': 0, 'RELN': 1})
+total_payments.drop(columns=['Source_System'], inplace=True)
 
 
-# %% Select columns for isolation forest input
-# Select columns for isolation forest
-if_data = total_payments[['Payment_Number_encoded',
-                           'Gen_Jnl_Line_Number',
-                           'Line_Number', 'ID_Vendor_Entry',
-                           'Object_Number_encoded', 'Vendor_Number',
-                           'Country_Region_Code_encoded', 'Amount_Applied',
-                           'Amount_Initial', 'Discount_Applied',
-                           'Discount_Allowed', 'Discount_Rate',
-                           'Discount_Possible',
-                           'Payment_Method_Code_encoded',
-                           'Customer_IBAN_encoded',
-                           'Vendor_Bank_Origin_encoded',
-                           'Vendor_IBAN_BIC_encoded', 'Posting_Date',
-                           'Blocked_Vendor', 'Review_Status_encoded',
-                           'Created_By_encoded', 'Source_System_encoded',
-                           'Year-Month', 'Mandant_encoded']]
+# %% Convert 'Posting_Date' & 'Due_Date to integer
+total_payments['Posting_Date'] = total_payments['Posting_Date'].astype(int)
+total_payments['Due_Date'] = total_payments['Due_Date'].astype(int)
 
-if_data.info()
+# %% Select columns for one-hot encoding
+input_cluster = total_payments[['Payment_Number',
+                                'Gen_Jnl_Line_Number',
+                                'Line_Number',
+                                'Object_Number', 'Vendor_Number',
+                                'Country_Region_Code', 'Amount_Applied',
+                                'Amount_Initial', 'Discount_Applied',
+                                'Discount_Allowed', 'Discount_Rate',
+                                'Payment_Method_Code',
+                                'Customer_IBAN', 'Vendor_IBAN_BIC',
+                                'Vendor_Bank_Origin', 'Posting_Date',
+                                'Due_Date', 'Created_By',
+                                'Source_System_encoded', 'Mandant']]
+
+input_tree = total_payments[['Payment_Number',
+                             'Gen_Jnl_Line_Number',
+                             'Line_Number',
+                             'Object_Number', 'Vendor_Number',
+                             'Country_Region_Code', 'Amount_Applied',
+                             'Amount_Initial', 'Discount_Applied',
+                             'Discount_Allowed', 'Discount_Rate',
+                             'Payment_Method_Code',
+                             'Customer_IBAN', 'Vendor_IBAN_BIC',
+                             'Vendor_Bank_Origin', 'Posting_Date',
+                             'Due_Date', 'Created_By',
+                             'Source_System_encoded', 'Mandant']]
+
+# %% Select columns for catgeorical encoding
+# Change categorical data type to label encoding
+cat_cols = ['Payment_Number', 'Object_Number',
+            'Country_Region_Code', 'Payment_Method_Code',
+            'Customer_IBAN', 'Vendor_IBAN_BIC',
+            'Vendor_Bank_Origin', 'Created_By',
+            'Mandant']
+
+for col in cat_cols:
+    labelencoder = LabelEncoder()
+    input_tree[col] = labelencoder.fit_transform(input_tree[col])
+
+print(input_tree.info())
+# %% One-hot encoding of categorical columns
+# creating one hot encoder object 
+onehotencoder = OneHotEncoder()
+
+# select the columns to be one-hot encoded
+columns_to_encode = ['Payment_Number', 'Object_Number',
+                     'Country_Region_Code', 'Payment_Method_Code',
+                     'Customer_IBAN', 'Vendor_IBAN_BIC',
+                     'Vendor_Bank_Origin', 
+                     'Created_By', 'Mandant']
+
+# apply one-hot encoding to the selected columns
+for col in columns_to_encode:
+    data = input_cluster[[col]]
+    X = onehotencoder.fit_transform(data.values.reshape(-1,1)).toarray()
+    dfOneHot = pd.DataFrame(X, columns=[col+"_"+str(int(i)) for i in range(X.shape[1])])
+    input_cluster = pd.concat([input_cluster, dfOneHot], axis=1)
+    input_cluster.drop([col], axis=1, inplace=True)
+
+# print the resulting dataframe
+print(input_cluster.info())
+
+# %%
+# for col in input.columns:
+#     # create a histogram for the current column
+#     plt.hist(input[col], bins=20)
+    
+#     # add labels and title to the plot
+#     plt.xlabel(col)
+#     plt.ylabel('Frequency')
+#     plt.title(f'Distribution of {col}')
+    
+#     # display the plot
+#     plt.show()
+
+# %% Scaling the input data
+
+# scaler = MinMaxScaler(feature_range=(-25, 25))
+# input_scaled = scaler.fit_transform(input)
+# input_scaled = pd.DataFrame(input_scaled, columns=input.columns)
 
 
+scaler = StandardScaler()
+input_scaled = scaler.fit_transform(input_cluster)
+input_scaled = pd.DataFrame(input_scaled, columns=input_cluster.columns)
 
-# %% Select columns for kmeans input
-kmeans_data = total_payments[['Payment_Number_encoded',
-                              'Gen_Jnl_Line_Number',
-                              'Line_Number', 'ID_Vendor_Entry',
-                              'Object_Number_encoded', 'Vendor_Number',
-                              'Country_Region_Code_encoded', 'Amount_Applied',
-                              'Amount_Initial', 'Discount_Applied',
-                              'Discount_Allowed', 'Discount_Rate',
-                              'Discount_Possible',
-                              'Payment_Method_Code_encoded',
-                              'Customer_IBAN_encoded',
-                              'Vendor_Bank_Origin_encoded',
-                              'Vendor_IBAN_BIC_encoded', 'Posting_Date',
-                              'Blocked_Vendor', 'Review_Status_encoded',
-                              'Created_By_encoded', 'Source_System_encoded',
-                              'Year-Month', 'Mandant_encoded']]
-
-kmeans_data.info()
-
+input_scaled.mean()
+input_scaled.var()
+# %%
+input_scaled.info()
+# # %%
+# for col in input_scaled.columns:
+#     # create a histogram for the current column
+#     plt.hist(input_scaled[col], bins=50)
+    
+#     # add labels and title to the plot
+#     plt.xlabel(col)
+#     plt.ylabel('Frequency')
+#     plt.title(f'Distribution of {col}')
+    
+#     # display the plot
+#     plt.show()
 # %%

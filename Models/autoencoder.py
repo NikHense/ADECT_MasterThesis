@@ -14,89 +14,50 @@ import seaborn as sns
 # Model and performance
 import tensorflow as tf
 from tensorflow.keras import layers, losses
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
 from sklearn.metrics import classification_report
 
 
-# %% Select columns for isolation forest
-data_Autoencoder = total_payments[['Payment_Number',
-                                   'Gen_Jnl_Line_Number',
-                                   'Line_Number', 'ID_Vendor_Entry',
-                                   'Object_Number', 'Vendor_Number',
-                                   'Country_Region_Code', 'Amount_Applied',
-                                   'Amount_Initial', 'Discount_Applied',
-                                   'Discount_Allowed', 'Discount_Rate',
-                                   'Discount_Possible', 'Payment_Method_Code',
-                                   'Customer_IBAN', 'Vendor_IBAN_BIC',
-                                   'Vendor_Bank_Origin', 'Posting_Date',
-                                   'Due_Date', 'Entry_Cancelled',
-                                   'Blocked_Vendor', 'Review_Status',
-                                   'Created_By', 'Source_System',
-                                   'Year-Month', 'Mandant']]
+# %% Start timer
+totaltime = time.time()
 
-
-# %% Convert 'Posting_Date' and 'Year-month' to integer
-data_Autoencoder['Posting_Date'] = data_Autoencoder[
-    'Posting_Date'].dt.strftime('%Y%m%d').astype(int)
-data_Autoencoder['Year-Month'] = data_Autoencoder['Year-Month'].dt.strftime(
-    '%Y%m').astype(int)
-data_Autoencoder['Due_Date'] = data_Autoencoder['Due_Date'].dt.strftime(
-    '%Y%m%d').astype(int)
-# %% Convert the categories of to distinct integers using cat.codes
-cat_cols = ['Payment_Number', 'Country_Region_Code', 'Payment_Method_Code',
-            'Customer_IBAN', 'Vendor_Bank_Origin', 'Vendor_IBAN_BIC',
-            'Created_By',  'Mandant']
-for col in cat_cols:
-    data_Autoencoder[col+'_encoded'] = data_Autoencoder[col].cat.codes
-
-
-# %% Create a binary encoding column
-# for 'Review_Status' and 'Source_System' having 0 and 1
-bin_cols = ['Review_Status', 'Source_System']
-for col in bin_cols:
-    data_Autoencoder[col+'_encoded'] = data_Autoencoder[col].cat.codes
-
-# %% Select columns for autoencoder input
-# Select columns for autoencoder
-auto_input = data_Autoencoder[['Payment_Number_encoded',
-                           'Gen_Jnl_Line_Number',
-                           'Line_Number', 'ID_Vendor_Entry',
-                           'Object_Number', 'Vendor_Number',
-                           'Country_Region_Code_encoded', 'Amount_Applied',
-                           'Amount_Initial', 'Discount_Applied',
-                           'Discount_Allowed', 'Discount_Rate',
-                           'Discount_Possible',
-                           'Payment_Method_Code_encoded',
-                           'Customer_IBAN_encoded',
-                           'Vendor_Bank_Origin_encoded',
-                           'Vendor_IBAN_BIC_encoded', 'Posting_Date',
-                           'Due_Date', 'Entry_Cancelled', 'Blocked_Vendor', 
-                           'Review_Status_encoded', 'Created_By_encoded', 
-                           'Source_System_encoded', 'Year-Month',
-                            'Mandant_encoded']]
-# Convert only integer columns to float
-auto_input = auto_input.astype(float)
-auto_input.info()
 # %% Train test split
-X_train, X_test = train_test_split(auto_input,
-                                   test_size=0.2, random_state=42)
+data_normal = data_normal.astype('float32')
+# Separate the features and labels
+X = data_normal.drop(['y'], axis=1)
+y = data_normal['y']
+
+# Split the data into training and testing sets, stratifying on the label column
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Concatenate the features and labels for the training and testing sets
+train_data = pd.concat([X_train, y_train], axis=1)
+test_data = pd.concat([X_test, y_test], axis=1)
+
 
 # Check the number of records
 print('The number of records in the training dataset is', X_train.shape[0])
 print('The number of records in the test dataset is', X_test.shape[0])
-# %% Setting up the autoencoder layers
+print(f"The training dataset has {sorted(Counter(y_train).items())[0][1]} records for the majority class and {sorted(Counter(y_train).items())[1][1]} records for the minority class.")# %% Setting up the autoencoder layers
+
+# %%
+# Keep only the normal data for the training dataset
+X_train_normal = X_train[y_train == 0]
+
 # Input layer
-input = tf.keras.layers.Input(shape=(26,))
+input = tf.keras.layers.Input(shape=(24,))
 # Encoder layers
 encoder = tf.keras.Sequential([
-  layers.Dense(14, activation='relu'),
-  layers.Dense(7, activation='relu'),
+  layers.Dense(12, activation='relu'),
+  layers.Dense(6, activation='relu'),
   layers.Dense(3, activation='relu')])(input)
 # Decoder layers
 decoder = tf.keras.Sequential([
-      layers.Dense(7, activation="relu"),
-      layers.Dense(14, activation="relu"),
-      layers.Dense(26, activation="sigmoid")])(encoder)
+      layers.Dense(6, activation="relu"),
+      layers.Dense(12, activation="relu"),
+      layers.Dense(24, activation="sigmoid")])(encoder)
 # Create the autoencoder
 autoencoder = tf.keras.Model(inputs=input, outputs=decoder)
 
@@ -104,8 +65,8 @@ autoencoder = tf.keras.Model(inputs=input, outputs=decoder)
 # Compile the autoencoder
 autoencoder.compile(optimizer='adam', loss='mae')
 # Fit the autoencoder
-history = autoencoder.fit(X_train, X_train, 
-          epochs=200, 
+history = autoencoder.fit(X_train_normal, X_train_normal, 
+          epochs=20, 
           batch_size=64,
           validation_data=(X_test, X_test),
           shuffle=True)
@@ -116,7 +77,7 @@ loss_values = history.history['loss']
 val_loss_values = history.history['val_loss']
 
 # Define the number of epochs
-epochs = range(1, 201)
+epochs = range(1, 21)
 
 # Create the line plot
 plt.plot(epochs, loss_values, label='Training loss')

@@ -3,7 +3,7 @@ import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-# import seaborn as sns
+import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 # from sklearn.neighbors import NearestNeighbors
@@ -15,49 +15,12 @@ import hdbscan
 # %% Start timer
 totaltime = time.time()
 
-# %% Test out the PCA and optimal number of principal components
-
-# Scale the data using StandardScaler
-scaler = StandardScaler()
-kmeans_data_scaled = scaler.fit_transform(kmeans_data)
-
-# Perform a PCA on kmeans_data
-pca = PCA(n_components=len(kmeans_data.columns))
-kmeans_data_pca = pca.fit_transform(kmeans_data_scaled)
-
-# # Method 1: Scree plot
-# # Plot the eigenvalues of the principal components
-# plt.plot(range(1, pca.n_components_ + 1),
-#          pca.explained_variance_ratio_, 'ro-', linewidth=2)
-# plt.title('Scree Plot')
-# plt.xlabel('Principal Component')
-# plt.ylabel('Eigenvalue')
-# plt.show()
-
-# Method 2: Cumulative proportion of variance explained
-# Calculate the cum. proportion of variance explained
-cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
-
-# Plot the cum. proportion of variance explained, with the 95% threshold
-plt.plot(range(1, pca.n_components_ + 1),
-         cumulative_variance_ratio, 'ro-', linewidth=2)
-plt.axhline(y=0.95, color='b', linestyle='--')
-plt.title('Cumulative Proportion of Variance Explained')
-plt.xlabel('Number of Principal Components')
-plt.ylabel('Cumulative Proportion of Variance Explained')
-plt.show()
-
-# retrieve the number of components that explain 90% of the variance
-n_components = np.argmax(cumulative_variance_ratio >= 0.95)
-print(f'{n_components} principal components explain 95% of the variance')
-
 # %% Run HDBSCAN algorithm
-starttime = time.time()
 # Compute the clustering using HDBSCAN
-hdbscan = hdbscan.HDBSCAN(metric='euclidean', 
-                          min_cluster_size=10,
+hdbscan = hdbscan.HDBSCAN(metric='euclidean',
+                          min_cluster_size=100,
                           allow_single_cluster=True)
-hdbscan.fit(kmeans_data_pca)
+hdbscan.fit(input_pca)
 
 # Number of clusters in labels, ignoring noise if present.
 labels_hdbscan = hdbscan.labels_
@@ -68,17 +31,30 @@ n_noise_hdbscan = list(labels_hdbscan).count(-1)
 print('Estimated number of clusters: %d' % n_clusters_hdbscan)
 print('Estimated number of noise points: %d' % n_noise_hdbscan)
 
-print(f'HDBSCAN process took {time.time() - starttime} seconds')
+# %% Apply the outlier detection of hdbscan
+hdbscan.outlier_scores_
+
+# %% Plot the outlier scores and zoom in on the tail
+sns.distplot(hdbscan.outlier_scores_[np.isfinite(hdbscan.outlier_scores_)], rug=True)
+
+plt.show()
+
+# DEfined the threshold for the outlier scores at 95% quantile
+threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.90)
+outliers = np.where(hdbscan.outlier_scores_ > threshold)[0]
+
+print(f'Number of outliers: {len(outliers)}')
+
 
 # %%
 # Invert the scaling applied by StandardScaler
-hdbscan_output = scaler.inverse_transform(kmeans_data_scaled)
+hdbscan_output = scaler.inverse_transform(input_scaled)
 
 # Convert the dbscan_output array to a pandas DataFrame
-hdbscan_output = pd.DataFrame(hdbscan_output, columns=kmeans_data.columns)
+hdbscan_output = pd.DataFrame(hdbscan_output, columns=input.columns)
 
 # Add the labels column to the dbscan_output at position 0
-hdbscan_output.insert(0, 'INDEX', kmeans_data.index)
+hdbscan_output.insert(0, 'INDEX', input.index)
 hdbscan_output.insert(1, 'labels', labels_hdbscan)
 hdbscan_output.insert(2, 'noise', hdbscan_output['labels'] == -1)
 

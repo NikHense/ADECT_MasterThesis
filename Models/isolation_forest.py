@@ -45,7 +45,7 @@ starttime = time.time()
 
 # Define list of parameter values to test
 n_estimators_list = list(range(100, 1002, 100))
-max_samples_list = list(range(500, len(input_scaled), 500))
+max_samples_list = list(range(500, len(input), 500))
 
 # Initialize empty lists to store results
 results = []
@@ -59,9 +59,9 @@ def fit_isof(params):
     isof = IsolationForest(n_estimators=n_estimators, max_samples=max_samples,
                            contamination='auto', random_state=42,
                            verbose=0, n_jobs=1)
-    isof.fit(input_scaled)
-    # scores = isof.decision_function(input_scaled)
-    anomaly = isof.predict(input_scaled)
+    isof.fit(input)
+    # scores = isof.decision_function(input)
+    anomaly = isof.predict(input)
     n_outliers = bincount((anomaly == -1).astype(int))[1]
     n_inliers = bincount((anomaly == 1).astype(int))[1]
     # elapsed_time1 = time.time() - starttime1
@@ -142,7 +142,8 @@ avg_outlier = np.array(avg_outlier)
 x = max_samples_list
 
 # %%
-kneedle = KneeLocator(x, avg_outlier, interp_method='polynomial',
+kneedle = KneeLocator(x, avg_outlier,
+                      interp_method='polynomial',
                       curve='convex', direction='decreasing')
 
 print(round(kneedle.elbow, 0))
@@ -179,11 +180,11 @@ isof = IsolationForest(n_estimators=avg_n_estimator,
                         contamination='auto', random_state=42,
                         verbose=0, n_jobs=-1)
 
-isof.fit(input_scaled)
+isof.fit(input)
 
-if_scores = isof.decision_function(input_scaled)
+if_scores = isof.decision_function(input)
 
-if_anomaly = isof.predict(input_scaled)
+if_anomaly = isof.predict(input)
 
 
 #  Results of the isolation forest
@@ -196,15 +197,19 @@ print(f'Database read process took {time.time() - starttime} seconds')
 
 # %%
 # Convert the dbscan_output array to a pandas DataFrame
-if_output = pd.DataFrame(input_scaled, columns=input.columns)
+if_output = pd.DataFrame(input, columns=input.columns)
 
 # Add the labels column to the dbscan_output at position 0
 if_output.insert(0, 'INDEX', input.index)
-if_output.insert(1, 'labels', if_anomaly, True)
+if_output.insert(1, 'labels_if', if_anomaly, True)
 if_output.insert(2, "scores", if_scores, True)
 
+# Transform the labels column to a boolean column (1 = False, -1 = True)
+if_output['labels_if'] = if_output['labels_if'].apply(lambda x: True if x == -1
+                                                else False)
+
 # Filter out the a data frame with only noise points & clean
-if_noise = if_output[if_output['labels'] == -1]
+if_noise = if_output[if_output['labels_if'] == True]
 
 # %% End and print the total time of Isolation Forest process
 minutes = int((time.time() - totaltime) / 60)
