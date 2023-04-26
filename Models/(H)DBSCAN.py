@@ -19,6 +19,20 @@ import hdbscan
 # %% Start timer
 totaltime = time.time()
 
+# %% Scaling the input data
+
+# scaler = MinMaxScaler(feature_range=(-25, 25))
+# input_scaled = scaler.fit_transform(input)
+# input_scaled = pd.DataFrame(input_scaled, columns=input.columns)
+
+
+scaler = StandardScaler()
+input_scaled = scaler.fit_transform(input)
+input_scaled = pd.DataFrame(input_scaled, columns=input.columns)
+
+input_scaled.mean()
+input_scaled.var()
+
 # %% Test out the PCA and optimal number of principal components
 
 # Perform a PCA on input_scaled
@@ -60,17 +74,17 @@ n_components = np.argmax(cumulative_variance_ratio >= 0.95)
 
 print(f'{n_components} principal components explain 95% of the variance')
 
-# if n_components > 15 than 15 otherwise n_components = np.argmax(cumulative_variance_ratio >= 0.99)
+# if n_components > 15 than 15 otherwise
+# n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 if n_components > 15:
-      n_components = 15
+    n_components = 15
 else:
-      n_components = np.argmax(cumulative_variance_ratio >= 0.95)               
-
+    n_components = np.argmax(cumulative_variance_ratio >= 0.95)
 
 
 # %% Calculate the K-Distance Graph
 
-# # Perform a PCA on input_scaled
+# Perform a PCA on input_scaled
 pca = PCA(n_components=n_components)
 input_pca = pca.fit_transform(input_scaled)
 
@@ -103,8 +117,8 @@ plt.show()
 distances = np.column_stack((np.arange(0, len(distances)), distances))
 
 # %% Calculate the maximum curvature point of the k-distance graph
-kneedle = KneeLocator(distances[:, 0], distances[:, 1],S=3,
-                      #interp_method='polynomial',
+kneedle = KneeLocator(distances[:, 0], distances[:, 1], S=4,
+                      # interp_method='polynomial',
                       curve='convex', direction='increasing')
 
 print(round(kneedle.knee, 0))
@@ -127,7 +141,7 @@ kneedle.plot_knee()
 # plt.ylim(kneedle.elbow_y - 0.5, kneedle.elbow_y + 1.5)
 # plt.show()
 
-#%%
+# %%
 # Plot the k-distance graph with the knee point (zoomed in)
 # plt.figure(figsize=(10, 10))
 # plt.plot(distances[:, 0], distances[:, 1], 'ro-', linewidth=2)
@@ -216,7 +230,8 @@ min_samples_list = list(range(n_components, (2*n_components-1)+10, 1))
 # # Store the results in a pandas DataFrame
 # results_silScore = pd.DataFrame(results_silScore,
 #                                 columns=['eps', 'min_samples',
-#                                          'n_clusters', 'n_noise', 'Sil_score'])
+#                                          'n_clusters', 'n_noise',
+#                                          'Sil_score'])
 
 # # Find the parameter combination with the highest score
 # best_row = results_silScore.iloc[results_silScore['Sil_score'].idxmax()]
@@ -239,7 +254,8 @@ min_samples_list = list(range(n_components, (2*n_components-1)+10, 1))
 # # sns.set_style("whitegrid")
 # # sns.set_context("paper")
 # # plt.figure(figsize=(10, 10))
-# # sns.scatterplot(x='eps', y='min_samples', hue='score', data=results_silScore)
+# # sns.scatterplot(x='eps', y='min_samples', hue='score',
+#                   data=results_silScore)
 # # plt.title('DBSCAN parameter grid search')
 # # plt.xlabel('eps')
 # # plt.ylabel('min_samples')
@@ -441,7 +457,7 @@ dbscan_output.insert(1, 'labels_dbscan', labels_dbscan)
 dbscan_output.insert(2, 'Anomaly_dbscan', dbscan_output['labels_dbscan'] == -1)
 
 # Filter out the a data frame with only noise points
-dbscan_noise = dbscan_output[dbscan_output['Anomaly_dbscan'] == True]
+dbscan_noise = dbscan_output[dbscan_output['Anomaly_dbscan']]
 
 # -----------------------------------------------------------------------------
 # Generate Output of HDBSCAN
@@ -458,97 +474,12 @@ hdbscan_output['Line_Number'] = hdbscan_output['Line_Number'].round(0)
 # Add the labels column to the dbscan_output at position 0
 hdbscan_output.insert(0, 'INDEX', input.index)
 hdbscan_output.insert(1, 'labels_hdbscan', labels_hdbscan)
-hdbscan_output.insert(2, 'Noise_hdbscan', hdbscan_output['labels_hdbscan'] == -1)
-hdbscan_output.insert(3, 'Anomaly_hdbscan', hdbscan.outlier_scores_ > threshold)
+hdbscan_output.insert(2, 'Noise_hdbscan',
+                      hdbscan_output['labels_hdbscan'] == -1)
+hdbscan_output.insert(3, 'Anomaly_hdbscan',
+                      hdbscan.outlier_scores_ > threshold)
 
 # Filter out the a data frame with only noise points & clean
-hdbscan_noise = hdbscan_output[hdbscan_output['Anomaly_hdbscan'] == True]
-
-# -----------------------------------------------------------------------------
-# Compare HDBSCAN with DBSCAN
-# -----------------------------------------------------------------------------
-# %% Check whether hdbscan_noise points are in dbscan_noise based on index
-
-# assuming both dataframes have columns called 'index'
-merged = pd.merge(dbscan_noise, hdbscan_noise, on='INDEX', how='inner')
-matching_obs = merged['INDEX'].tolist()
-
-# Calculate number of noise points from hdbscan_noise that are in dbscan_noise
-print(len(matching_obs),
-      f'of {len(dbscan_noise)} noise points in total are similar')
-print('Percentage: ',
-      round(len(matching_obs)/len(dbscan_noise)*100, 2), '%')
- 
-# assuming both dataframes have columns called 'index'
-merged_outer = pd.merge(dbscan_noise, hdbscan_noise, on='INDEX',
-                        how='outer', indicator=True)
-
-# get rows that are only in one of the dataframes
-not_in_both = merged_outer.loc[merged_outer['_merge'].isin(['left_only',
-                                                            'right_only'])]
-
-# Calculate number of noise points from left_only and right_only
-left_only = not_in_both.loc[not_in_both['_merge'].isin(['left_only'])]
-right_only = not_in_both.loc[not_in_both['_merge'].isin(['right_only'])]
-print('Only in dbscan_noise: ', len(left_only))
-print('Only in hdbscan_noise: ', len(right_only))
-
-# -----------------------------------------------------------------------------
-# Compare DBSCAN with IF
-# -----------------------------------------------------------------------------
-# %%
-# assuming both dataframes have columns called 'index'
-merged = pd.merge(dbscan_noise, if_noise, on='INDEX', how='inner')
-matching_obs = merged['INDEX'].tolist()
-
-# Calculate number of noise points from dbscan_noise that are in if_noise
-print(len(matching_obs),
-      f'of {len(dbscan_noise)} noise points in total are similar')
-print('Percentage: ',
-      round(len(matching_obs)/len(dbscan_noise)*100, 2), '%')
-
-# %% Check wheter dbscan_noise points are in if_noise based on index
-# assuming both dataframes have columns called 'index'
-merged_outer = pd.merge(dbscan_noise, if_noise, on='INDEX',
-                        how='outer', indicator=True)
-
-# get rows that are only in one of the dataframes
-not_in_both = merged_outer.loc[merged_outer['_merge'].isin(
-    ['left_only', 'right_only'])]
-
-# Calculate number of noise points from left_only and right_only
-left_only = not_in_both.loc[not_in_both['_merge'].isin(['left_only'])]
-right_only = not_in_both.loc[not_in_both['_merge'].isin(['right_only'])]
-print('Only in dbscan_noise: ', len(left_only))
-print('Only in if_noise: ', len(right_only))
-
-# -----------------------------------------------------------------------------
-# Compare HDBSCAN with IF
-# -----------------------------------------------------------------------------
-# %%
-# assuming both dataframes have columns called 'index'
-merged = pd.merge(hdbscan_noise, if_noise, on='INDEX', how='inner')
-matching_obs = merged['INDEX'].tolist()
-
-# Calculate number of noise points from dbscan_noise that are in if_noise
-print(len(matching_obs),
-      f'of {len(if_noise)} noise points in total are similar')
-print('Percentage: ',
-      round(len(matching_obs)/len(if_noise)*100, 2), '%')
-
-# %% Check wheter dbscan_noise points are in if_noise based on index
-# assuming both dataframes have columns called 'index'
-merged_outer = pd.merge(hdbscan_noise, if_noise, on='INDEX',
-                        how='outer', indicator=True)
-
-# get rows that are only in one of the dataframes
-not_in_both = merged_outer.loc[merged_outer['_merge'].isin(
-    ['left_only', 'right_only'])]
-
-# Calculate number of noise points from left_only and right_only
-left_only = not_in_both.loc[not_in_both['_merge'].isin(['left_only'])]
-right_only = not_in_both.loc[not_in_both['_merge'].isin(['right_only'])]
-print('Only in hdbscan_noise: ', len(left_only))
-print('Only in if_noise: ', len(right_only))
+hdbscan_noise = hdbscan_output[hdbscan_output['Anomaly_hdbscan']]
 
 # %%

@@ -40,7 +40,7 @@ totaltime = time.time()
 # input.insert(0, "scores1", scores1, True)
 # input.insert(1, "anomaly1", anomaly1, True)
 
-# %% Execute grid search for isolation forest (!!! 8 min running time !!!)
+# %% Execute grid search for isolation forest (!!! 24 min running time !!!)
 starttime = time.time()
 
 # Define list of parameter values to test

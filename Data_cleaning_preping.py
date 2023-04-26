@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import scipy.stats as stats
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 # import datetime
 # import json
@@ -109,21 +108,8 @@ total_payments.drop(columns=['Source_System'], inplace=True)
 total_payments['Posting_Date'] = total_payments['Posting_Date'].astype(int)
 total_payments['Due_Date'] = total_payments['Due_Date'].astype(int)
 
-# %% Select columns for one-hot encoding
-input_cluster = total_payments[['Payment_Number',
-                                'Gen_Jnl_Line_Number',
-                                'Line_Number',
-                                'Object_Number', 'Vendor_Number',
-                                'Country_Region_Code', 'Amount_Applied',
-                                'Amount_Initial', 'Discount_Applied',
-                                'Discount_Allowed', 'Discount_Rate',
-                                'Payment_Method_Code',
-                                'Customer_IBAN', 'Vendor_IBAN_BIC',
-                                'Vendor_Bank_Origin', 'Posting_Date',
-                                'Due_Date', 'Created_By',
-                                'Source_System_encoded', 'Mandant']]
-
-input_tree = total_payments[['Payment_Number',
+# %% Select columns for encoding
+input = total_payments[['Payment_Number',
                              'Gen_Jnl_Line_Number',
                              'Line_Number',
                              'Object_Number', 'Vendor_Number',
@@ -146,30 +132,9 @@ cat_cols = ['Payment_Number', 'Object_Number',
 
 for col in cat_cols:
     labelencoder = LabelEncoder()
-    input_tree[col] = labelencoder.fit_transform(input_tree[col])
+    input[col] = labelencoder.fit_transform(input[col])
 
-print(input_tree.info())
-# %% One-hot encoding of categorical columns
-# creating one hot encoder object 
-onehotencoder = OneHotEncoder()
-
-# select the columns to be one-hot encoded
-columns_to_encode = ['Payment_Number', 'Object_Number',
-                     'Country_Region_Code', 'Payment_Method_Code',
-                     'Customer_IBAN', 'Vendor_IBAN_BIC',
-                     'Vendor_Bank_Origin', 
-                     'Created_By', 'Mandant']
-
-# apply one-hot encoding to the selected columns
-for col in columns_to_encode:
-    data = input_cluster[[col]]
-    X = onehotencoder.fit_transform(data.values.reshape(-1,1)).toarray()
-    dfOneHot = pd.DataFrame(X, columns=[col+"_"+str(int(i)) for i in range(X.shape[1])])
-    input_cluster = pd.concat([input_cluster, dfOneHot], axis=1)
-    input_cluster.drop([col], axis=1, inplace=True)
-
-# print the resulting dataframe
-print(input_cluster.info())
+print(input.info())
 
 # %%
 # for col in input.columns:
@@ -184,22 +149,7 @@ print(input_cluster.info())
 #     # display the plot
 #     plt.show()
 
-# %% Scaling the input data
-
-# scaler = MinMaxScaler(feature_range=(-25, 25))
-# input_scaled = scaler.fit_transform(input)
-# input_scaled = pd.DataFrame(input_scaled, columns=input.columns)
-
-
-scaler = StandardScaler()
-input_scaled = scaler.fit_transform(input_cluster)
-input_scaled = pd.DataFrame(input_scaled, columns=input_cluster.columns)
-
-input_scaled.mean()
-input_scaled.var()
 # %%
-input_scaled.info()
-# # %%
 # for col in input_scaled.columns:
 #     # create a histogram for the current column
 #     plt.hist(input_scaled[col], bins=50)
@@ -211,4 +161,24 @@ input_scaled.info()
     
 #     # display the plot
 #     plt.show()
-# %%
+# %% One-hot encoding of categorical columns
+# creating one hot encoder object 
+# onehotencoder = OneHotEncoder()
+
+# # select the columns to be one-hot encoded
+# columns_to_encode = ['Payment_Number', 'Object_Number',
+#                      'Country_Region_Code', 'Payment_Method_Code',
+#                      'Customer_IBAN', 'Vendor_IBAN_BIC',
+#                      'Vendor_Bank_Origin', 
+#                      'Created_By', 'Mandant']
+
+# # apply one-hot encoding to the selected columns
+# for col in columns_to_encode:
+#     data = input_cluster[[col]]
+#     X = onehotencoder.fit_transform(data.values.reshape(-1,1)).toarray()
+#     dfOneHot = pd.DataFrame(X, columns=[col+"_"+str(int(i)) for i in range(X.shape[1])])
+#     input_cluster = pd.concat([input_cluster, dfOneHot], axis=1)
+#     input_cluster.drop([col], axis=1, inplace=True)
+
+# # print the resulting dataframe
+# print(input_cluster.info())
