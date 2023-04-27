@@ -3,18 +3,17 @@ import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from kneed import KneeLocator
+# from kneed import KneeLocator
 from sklearn.neighbors import LocalOutlierFactor
-from sklearn import metrics 
+from sklearn import metrics
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-import multiprocessing as mp
 from multiprocessing import Pool
-import seaborn as sns
+# import seaborn as sns
 
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Parameter selection for K-Means
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # %% Start timer
 totaltime = time.time()
 
@@ -76,7 +75,7 @@ if n_components > 15:
 else:
     n_components = np.argmax(cumulative_variance_ratio >= 0.95)
 
-# %% Perform a final PCA on input_ lof_scaled with the optimal number of components
+# %% Perform a final PCA on input_lof_scaled w/ best num. of components
 pca = PCA(n_components=n_components)
 input_pca = pca.fit_transform(input_lof_scaled)
 
@@ -106,7 +105,7 @@ def LOF_CH(n):
                              n_jobs=1)
     labels_lof = lof.fit_predict(input_pca)
     # outlier_scores = lof.negative_outlier_factor_
-    CH_score = metrics.calinski_harabasz_score(input_pca,labels_lof)
+    CH_score = metrics.calinski_harabasz_score(input_pca, labels_lof)
     n_outlier = np.count_nonzero(labels_lof == -1)
     print("For n =", n, "CH_score :", CH_score, "n_outlier :", n_outlier)
     return n, CH_score, n_outlier
@@ -134,38 +133,6 @@ results_LOF_CH['CH_score'] = results_LOF_CH['CH_score'].astype('float64')
 best_LOF_CH = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]
 best_n = best_LOF_CH['n'].astype('int64')
 
-
-# %%
-# def LOF_CH(n, input_pca):
-#     lof = LocalOutlierFactor(n_neighbors=n, contamination='auto', n_jobs=1)
-#     labels_lof = lof.fit_predict(input_pca)
-#     outlier_scores = lof.negative_outlier_factor_
-#     CH_score = metrics.calinski_harabasz_score(input_pca, outlier_scores)
-#     n_outlier = np.count_nonzero(labels_lof == -1)
-#     print(f"For n = {n}, CH_score: {CH_score:.4f}, n_outlier: {n_outlier}")
-#     return n, CH_score, n_outlier
-
-# if __name__ == '__main__':
-#     starttime = time.time()
-
-#     # Define input_pca here
-
-#     n = list(range(1, 4000, 50))
-
-#     with mp.Pool() as pool:
-#         results = [pool.apply_async(LOF_CH, (i, input_pca)) for i in n]
-#         output = [p.get() for p in results]
-
-#     output = np.array(output)
-
-#     results_LOF_CH = pd.DataFrame(data=output, columns=['n', 'CH_score', 'n_outlier'])
-
-#     # Print the time the process took
-#     minutes = int((time.time() - starttime) / 60)
-#     seconds = int((time.time() - starttime) % 60)
-#     print(f"LOF grid search process took {minutes} minutes and {seconds} seconds")
-
-
 # %% Plot the silhouette scores
 plt.plot(results_LOF_CH['n'], results_LOF_CH['CH_score'], 'ro-', linewidth=2)
 plt.title('CH_Score over n')
@@ -184,13 +151,12 @@ plt.show()
 # %%
 
 lof_best = LocalOutlierFactor(n_neighbors=best_n, contamination='auto',
-                             n_jobs=-1)
+                              n_jobs=-1)
 labels_lof = lof_best.fit_predict(input_pca)
-CH_score = round(metrics.calinski_harabasz_score(input_pca,labels_lof), 4)
+CH_score = round(metrics.calinski_harabasz_score(input_pca, labels_lof), 4)
 n_outlier = np.count_nonzero(labels_lof == -1)
 
 print("For n =", best_n, "CH_score :", CH_score, "n_outlier :", n_outlier)
-
 
 # %%
 # Invert the scaling applied by StandardScaler
@@ -203,12 +169,11 @@ lof_output = scaler.inverse_transform(input_lof_scaled)
 lof_output = pd.DataFrame(lof_output, columns=input_lof_scaled.columns)
 
 # Add the labels column to the dbscan_output at position 0
-lof_output.insert(0, 'INDEX', input.index)
+lof_output.insert(0, 'INDEX', total_payments.index)
 lof_output.insert(1, 'labels_lof', labels_lof)
 lof_output.insert(2, 'Anomaly_lof', lof_output['labels_lof'] == -1)
 
 # Filter out the a data frame with only noise points
 lof_noise = lof_output[lof_output['Anomaly_lof']]
-
 
 # %%

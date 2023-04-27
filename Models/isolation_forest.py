@@ -176,9 +176,9 @@ starttime = time.time()
 avg_n_estimator = mean(n_estimators_list)
 
 isof = IsolationForest(n_estimators=avg_n_estimator,
-                        max_samples=int(kneedle.elbow),
-                        contamination='auto', random_state=42,
-                        verbose=0, n_jobs=-1)
+                       max_samples=int(kneedle.elbow),
+                       contamination='auto', random_state=42,
+                       verbose=0, n_jobs=-1)
 
 isof.fit(input)
 
@@ -200,16 +200,16 @@ print(f'Database read process took {time.time() - starttime} seconds')
 if_output = pd.DataFrame(input, columns=input.columns)
 
 # Add the labels column to the dbscan_output at position 0
-if_output.insert(0, 'INDEX', input.index)
+if_output.insert(0, 'INDEX', total_payments.index)
 if_output.insert(1, 'labels_if', if_anomaly, True)
 if_output.insert(2, "scores", if_scores, True)
 
 # Transform the labels column to a boolean column (1 = False, -1 = True)
 if_output['labels_if'] = if_output['labels_if'].apply(lambda x: True if x == -1
-                                                else False)
+                                                      else False)
 
 # Filter out the a data frame with only noise points & clean
-if_noise = if_output[if_output['labels_if'] == True]
+if_noise = if_output[if_output['labels_if']]
 
 # %% End and print the total time of Isolation Forest process
 minutes = int((time.time() - totaltime) / 60)
