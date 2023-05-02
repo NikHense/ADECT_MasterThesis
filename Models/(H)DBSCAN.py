@@ -118,7 +118,7 @@ distances = np.column_stack((np.arange(0, len(distances)), distances))
 
 # %% Calculate the maximum curvature point of the k-distance graph
 kneedle = KneeLocator(distances[:, 0], distances[:, 1], S=4,
-                    #   interp_method='polynomial',
+                      # interp_method='polynomial',
                       curve='convex', direction='increasing')
 
 print(round(kneedle.knee, 0))
@@ -163,7 +163,7 @@ kneedle.plot_knee()
 eps = round(kneedle.elbow_y, 3)
 
 # Define the optimal min_samples value (acc. Sander's 1998)
-min_samples_list = list(range(n_components, (2*n_components-1)+10, 1))
+min_samples_list = list(range(n_components, (2*n_components-1)+400, 1))
 # min_samples_list = list(range(n_components, 3000, 1))
 
 
@@ -364,11 +364,11 @@ plt.show()
 # %% Run best parameter DBSCAN
 starttime = time.time()
 # Define the optimal min_samples value (acc. Sander's 1998)
-min_samples = (2*n_components-1)
+# min_samples = (2*n_components-1)
 # Define the optimal min_samples value from the max Calinski-Harabasz score
-# min_samples = results_chScore.iloc[results_chScore
-#                                    ['CH_score'].idxmax()]['min_samples']
-# min_samples = int(min_samples)
+min_samples = results_chScore.iloc[results_chScore
+                                   ['CH_score'].idxmax()]['min_samples']
+min_samples = int(min_samples)
 
 
 # Apply DBSCAN to cluster the data

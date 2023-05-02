@@ -3,6 +3,7 @@ import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 # from kneed import KneeLocator
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn import metrics
@@ -132,14 +133,14 @@ best_LOF_CH = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]
 best_n = best_LOF_CH['n'].astype('int64')
 
 # %% Plot the silhouette scores
-plt.plot(results_LOF_CH['n'], results_LOF_CH['CH_score'], 'ro-', linewidth=2)
+sns.lineplot(x=results_LOF_CH['n'], y=results_LOF_CH['CH_score'], linewidth=2)
 plt.title('CH_Score over n')
 plt.xlabel('Number of Neighbors')
 plt.ylabel('Calinski-Harabasz Score')
 plt.show()
 
 # plot number of outliers vs. n (change style of plot)
-plt.plot(results_LOF_CH['n'], results_LOF_CH['n_outlier'], 'ro-', linewidth=2)
+plt.plot(results_LOF_CH['n'], results_LOF_CH['n_outlier'], linewidth=2)
 plt.title('Number of Outliers over n')
 plt.xlabel('Number of Neighbors')
 plt.ylabel('Number of Outliers')
