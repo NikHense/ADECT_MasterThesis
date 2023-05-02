@@ -118,7 +118,7 @@ distances = np.column_stack((np.arange(0, len(distances)), distances))
 
 # %% Calculate the maximum curvature point of the k-distance graph
 kneedle = KneeLocator(distances[:, 0], distances[:, 1], S=4,
-                      # interp_method='polynomial',
+                    #   interp_method='polynomial',
                       curve='convex', direction='increasing')
 
 print(round(kneedle.knee, 0))
@@ -127,8 +127,8 @@ print(round(kneedle.elbow_y, 3))
 # Normalized data, normalized knee, and normalized distance curve.
 plt.style.use('ggplot')
 kneedle.plot_knee_normalized()
-plt.xlim(0, 0.05)
-plt.ylim(0.95, 1)
+# plt.xlim(0, 0.1)
+# plt.ylim(0.85, 1)
 plt.show()
 
 kneedle.plot_knee()

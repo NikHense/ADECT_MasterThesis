@@ -11,9 +11,7 @@ from sklearn.decomposition import PCA
 from multiprocessing import Pool
 # import seaborn as sns
 
-# -----------------------------------------------------------------------------
-# Parameter selection for K-Means
-# -----------------------------------------------------------------------------
+
 # %% Start timer
 totaltime = time.time()
 

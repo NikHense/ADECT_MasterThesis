@@ -125,7 +125,7 @@ data_normal = data_normal[['INDEX', 'Anomaly_dbscan', 'Anomaly_hdbscan',
                            'Vendor_IBAN_BIC',
                            'Vendor_Bank_Origin', 'Posting_Date',
                            'Due_Date', 'Created_By',
-                           'Source_System_encoded', 'Mandant']]
+                           'Source_System', 'Mandant']]
 
 # Count the number of true in Anomaly_dbscan & Anomaly_hdbscan & Anomaly_if
 # and create a new column with the sum
@@ -158,5 +158,22 @@ total_payments = pd.merge(total_payments,
                                        'Anomaly_hdbscan', 'Anomaly_if',
                                        'Anomaly_lof', 'Anomaly_sum',]],
                           on='INDEX', how='left')
+
+# %% Export the total_payments dataframe to a csv file
+total_payments.to_csv('total_payments_results.csv', index=False)
+
+# %%
+# Create a scatter plot for the anomalies with color based on the 'Anomaly_sum' column
+fig, ax = plt.subplots(figsize=(10, 10))
+scatter = ax.scatter(total_payments['Amount_Applied'], total_payments['Discount_Applied'],
+                        c=data_normal['Anomaly_sum'], cmap='coolwarm')
+legend1 = ax.legend(*scatter.legend_elements(),
+                        loc="upper right", title="Anomaly")
+ax.add_artist(legend1)
+plt.xlabel('Amount_Applied')
+plt.ylabel('Discount_Applied')
+plt.title('Anomaly detection')
+plt.show()
+
 
 # %%

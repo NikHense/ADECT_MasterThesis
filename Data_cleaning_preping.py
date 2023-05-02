@@ -21,6 +21,7 @@ SERVER = 'T-SQLDWH-DEV'  # os.environ.get('SERVER')
 DB = 'ML'
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')
+
 # %% sql connection
 conn = ("Driver={ODBC Driver 18 for SQL Server};"
         "Server="+SERVER+";"
@@ -37,6 +38,8 @@ engine = create_engine(
 SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
 total_payments = pd.DataFrame(engine.connect().execute(
     text(SQL_TOTAL_PAYMENTS)))
+
+total_payments.insert(0, 'INDEX', total_payments.index)
 
 total_payments.info()
 # %% Define new data frame for data cleaning and preparation
