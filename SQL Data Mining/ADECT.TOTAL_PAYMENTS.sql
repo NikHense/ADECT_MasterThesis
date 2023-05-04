@@ -1,10 +1,11 @@
 USE [ML]
 GO
-/****** Object:  StoredProcedure [ADECT].[S_TOTAL_PAYMENTS]    Script Date: 02.05.2023 10:35:16 ******/
+/****** Object:  StoredProcedure [ADECT].[S_TOTAL_PAYMENTS]    Script Date: 04.05.2023 11:30:17 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
+
 
 ALTER PROCEDURE [ADECT].[S_TOTAL_PAYMENTS] AS BEGIN
 
@@ -168,7 +169,59 @@ SELECT
     ,bfsn.Mandant
 
 FROM [ADECT].[BFSN_PAYMENT] bfsn
+UNION 
+SELECT 
+	pp.Payment_Number 
+    ,pp.Posting_Description_1
+    ,pp.Posting_Description_2
+    ,pp.Posting_Description_3
+    ,pp.Document_Number_external
+    ,pp.Document_Number_internal
+    --,pp.Contract_Number --> exclude from consideration, since there is no contract number for any (accounts payable) vendor
+    ,pp.Gen_Jnl_Line_Number
+    ,pp.Line_Number
+    ,pp.ID_Vendor_Entry
+    ,pp.Object_Number
+    ,pp.Vendor_Number
+    ,pp.[Name]
+    ,pp.City
+    ,pp.Country_Region_Code
+    ,pp.Amount_Applied
+    ,pp.Amount_Initial
+    ,pp.Discount_Applied
+    ,pp.Discount_Allowed
+    ,pp.Discount_Rate
+    ,pp.Discount_Possible
+    --,pp.VAT_Rate
+    --,pp.VAT_Amount
+    ,pp.Payment_Method_Code
+    ,pp.Customer_Bank_Branch_Number
+    ,pp.Customer_Bank_Account_Number
+    ,pp.Customer_IBAN
+    ,pp.Vendor_Account_Holder
+    ,pp.Vendor_IBAN
+	,pp.Vendor_BIC
+    ,pp.Vendor_Bank_Account_Number
+    ,pp.Vendor_Bank_Branch_Number
+	,pp.Vendor_Bank_Origin
+    ,pp.Posting_Date
+    ,pp.Posting_Date_Changed
+    ,pp.Due_Date
+    ,pp.Last_Payment_Date
+    ,pp.Entry_Cancelled
+    ,pp.Jnl_Changed_By
+    ,pp.Jnl_Changed_On
+    --,pp.Blocked_Vendor
+    ,pp.Review_Status
+    ,pp.Created_By
+    ,pp.Vendor_Number_Name
+	,pp.Source_System
+    ,pp.Rownumber
+	,pp.[Year]
+    ,pp.[Year-Month]
+    ,pp.Mandant
 
+FROM [ADECT].[RELN_PAYMENT_PROPOSAL] pp
 
 --------------------------------------------------------------------------------------------------------
 --Update Country_Region_Code spelling
