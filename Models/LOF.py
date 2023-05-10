@@ -128,11 +128,11 @@ results_LOF_CH = pd.DataFrame(results_LOF_CH,
 
 results_LOF_CH['CH_score'] = results_LOF_CH['CH_score'].astype('float64')
 
-# Find the parameter combination with the highest score
-best_LOF_CH = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]
-best_n = best_LOF_CH['n'].astype('int64')
+# # Find the parameter combination with the highest score
+# best_LOF_CH = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]
+# best_n = best_LOF_CH['n'].astype('int64')
 
-# %% Plot the silhouette scores
+# %% Plot the Calinski-Harabasz scores
 sns.lineplot(x=results_LOF_CH['n'], y=results_LOF_CH['CH_score'], linewidth=2)
 plt.title('CH_Score over n')
 plt.xlabel('Number of Neighbors')
@@ -147,8 +147,31 @@ plt.ylabel('Number of Outliers')
 # plt.ylim(5000,7000)
 plt.show()
 
-# %%
+# %% Calculate the maximum curvature point of the number of outliers
+num_outliers = results_LOF_CH['n_outlier']
+num_outliers = np.array(num_outliers)
 
+x_lof = results_LOF_CH['n']
+x_lof = np.array(x_lof)
+
+kneedle = KneeLocator(x_lof, num_outliers,
+                      S=1,
+                      #  interp_method='polynomial',
+                      curve='convex', direction='decreasing')
+
+print(round(kneedle.elbow, 0))
+print(round(kneedle.elbow_y, 3))
+
+plt.style.use('ggplot')
+kneedle.plot_knee_normalized()
+# plt.xlim(0, 0.05)
+# plt.ylim(0.95, 1)
+plt.show()
+
+kneedle.plot_knee()
+
+best_n = kneedle.elbow
+# %%
 lof_best = LocalOutlierFactor(n_neighbors=best_n, contamination='auto',
                               n_jobs=-1)
 labels_lof = lof_best.fit_predict(input_pca)

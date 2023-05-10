@@ -1,6 +1,8 @@
+# %%
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+
 
 # -----------------------------------------------------------------------------
 # Compare HDBSCAN with DBSCAN
@@ -41,11 +43,11 @@ matching_obs = merged['INDEX'].tolist()
 
 # Calculate number of noise points from dbscan_noise that are in if_noise
 print(len(matching_obs),
-      f'of {len(dbscan_noise)} noise points in total are similar')
+      f'of {len(if_noise)} noise points in total are similar')
 print('Percentage: ',
-      round(len(matching_obs)/len(dbscan_noise)*100, 2), '%')
+      round(len(matching_obs)/len(if_noise)*100, 2), '%')
 
-# %% Check wheter dbscan_noise points are in if_noise based on index
+# Check wheter dbscan_noise points are in if_noise based on index
 # assuming both dataframes have columns called 'index'
 merged_outer = pd.merge(dbscan_noise, if_noise, on='INDEX',
                         how='outer', indicator=True)
@@ -159,21 +161,20 @@ total_payments = pd.merge(total_payments,
                                        'Anomaly_lof', 'Anomaly_sum',]],
                           on='INDEX', how='left')
 
-# %% Export the total_payments dataframe to a csv file
-total_payments.to_csv('total_payments_results.csv', index=False)
+# # %% Export the total_payments dataframe to a csv file
+# total_payments.to_csv('total_payments_results.csv', index=False)
 
 # %%
-# Create a scatter plot for the anomalies with color based on the 'Anomaly_sum' column
-fig, ax = plt.subplots(figsize=(10, 10))
-scatter = ax.scatter(total_payments['Amount_Applied'], total_payments['Discount_Applied'],
-                        c=data_normal['Anomaly_sum'], cmap='coolwarm')
-legend1 = ax.legend(*scatter.legend_elements(),
-                        loc="upper right", title="Anomaly")
-ax.add_artist(legend1)
-plt.xlabel('Amount_Applied')
-plt.ylabel('Discount_Applied')
-plt.title('Anomaly detection')
-plt.show()
+# Create a scatter plot with Anomaly_sum_x >= 2 with color based on the 'Anomaly_sum_x' column
 
+
+df_filtered = total_payments[total_payments['Anomaly_sum'] >= 3]
+color_dict = {1: 'green', 2: 'blue', 3: 'orange', 4: 'red'}
+
+df_filtered.plot.scatter(x='Amount_Applied', y='Payment_Number', c=df_filtered['Anomaly_sum'].map(color_dict))
+
+plt.legend(handles=[plt.plot([],[],color=color_dict[val], marker='o', ls='', mec='none', label='Anomaly Sum {}'.format(val))[0] for val in color_dict.keys()])
+plt.title('Scatter Plot of Payment Number vs. Amount Applied with Anomaly Sum Highlighted')
+plt.show()
 
 # %%

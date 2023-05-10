@@ -17,7 +17,7 @@ from sqlalchemy import create_engine, text
 
 
 # %% params sql connection
-SERVER = 'T-SQLDWH-DEV'  # os.environ.get('SERVER')
+SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
 DB = 'ML'
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')

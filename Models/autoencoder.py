@@ -122,15 +122,15 @@ prediction = autoencoder.predict(X_test)
 # Get the mean absolute error between actual and reconstruction/prediction
 prediction_loss = tf.keras.losses.mae(prediction, X_test)
 # Check the prediction loss threshold for 0.1% of outliers
-loss_threshold = np.percentile(prediction_loss, 99.9)
+loss_threshold = np.percentile(prediction_loss, 99.5)
 print(f'The prediction loss threshold for 0.1% of '
       f'outliers is {loss_threshold:.2f}')
 # Visualize the threshold
-sns.histplot(prediction_loss, bins=50, alpha=0.8, color='b')
+sns.histplot(prediction_loss, bins=1000, alpha=0.8, color='b')
 plt.axvline(x=loss_threshold, color='orange')
 
 # %%
-# Check the model performance at 2% threshold
+# Check the model performance at 0.1% threshold
 threshold_prediction = [0 if i < loss_threshold else 1
                         for i in prediction_loss]
 # # Check the prediction performance
