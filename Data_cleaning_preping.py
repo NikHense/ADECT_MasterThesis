@@ -39,9 +39,50 @@ SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
 total_payments = pd.DataFrame(engine.connect().execute(
     text(SQL_TOTAL_PAYMENTS)))
 
-total_payments.insert(0, 'INDEX', total_payments.index)
+# %% Import Fraudulent Invoices
+# # Define the data types for each feature
+dtypes = {
+    'Object_Number': str
+}
+
+# Import Fraudulent Invoices csv file
+fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
+                             na_values='NA', sep=';')
+
+
+# Delete row with index 20 until 23
+fraud_invoices = fraud_invoices.drop([20, 21, 22, 23])
+
+# Replace the , in 'Ammount_Applied', 'Ammount_Initial' and 'Discount_Applied' with .
+fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
+fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
+fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
+fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
+
+
+# Transform data type of column 'Amount_Applied', 'Amount_Initial' and 'Discount_Applied' to float
+fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].astype(
+    float)
+fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].astype(
+    float)
+fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].astype(
+    float)
+fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].astype(float)
+
+# Replace ' ' with NaN
+fraud_invoices.replace(' ', np.nan, inplace=True)
+
+fraud_invoices.info()
+# %% add entries of fraudulent invoices to total_payments
+total_payments = pd.concat([total_payments, fraud_invoices], ignore_index=True)
+
+# total_payments.insert(0, 'INDEX', total_payments.index)
+
+# Transforn nan of 'Fraud' column to 0
+total_payments['Fraud'] = total_payments['Fraud'].fillna(0)
 
 total_payments.info()
+
 # %% Define new data frame for data cleaning and preparation
 input = total_payments.copy()
 
@@ -56,6 +97,9 @@ input['Vendor_IBAN_BIC'] = input['Vendor_IBAN'] + input['Vendor_BIC']
 date_cols = ['Posting_Date', 'Due_Date']
 for col in date_cols:
     input[col] = pd.to_datetime(input[col])
+
+# Specify the observation period ending on 10.05.2023
+input = input[(input['Posting_Date'] <= '2023-05-10')]
 
 # Change data type to integer type
 int_cols = ['Vendor_Number', 'Posting_Date', 'Due_Date']

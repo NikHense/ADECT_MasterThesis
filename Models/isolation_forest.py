@@ -40,12 +40,12 @@ totaltime = time.time()
 # input.insert(0, "scores1", scores1, True)
 # input.insert(1, "anomaly1", anomaly1, True)
 
-# %% Execute grid search for isolation forest (!!! 24 min running time !!!)
+# %% Execute grid search for isolation forest (!!! 12 min running time !!!)
 starttime = time.time()
 
 # Define list of parameter values to test
 n_estimators_list = list(range(100, 1002, 100))
-max_samples_list = list(range(500, len(input), 500))
+max_samples_list = list(range(1000, len(input), 1000))
 
 # Initialize empty lists to store results
 results = []
@@ -132,8 +132,7 @@ plt.ylabel('Average number of outliers')
 plt.xlabel('Number of max_samples')
 plt.show()
 
-# %%
-# %% Calculate the maximum curvature point of the k-distance graph
+# %% Calculate the maximum curvature point of the average number of outliers
 # Print the list of average number of outliers per max_samples
 avg_outlier = iso_output.groupby('max_samples')['n_outliers'].mean()
 avg_outlier = np.array(avg_outlier)
@@ -143,7 +142,9 @@ x = max_samples_list
 
 # %%
 kneedle = KneeLocator(x, avg_outlier,
+                      #  S=5,
                       interp_method='polynomial',
+                      #  smoothen the lines, otherwise bumpy
                       curve='convex', direction='decreasing')
 
 print(round(kneedle.elbow, 0))
@@ -195,11 +196,11 @@ print("Number of outliers: ", n_outliers)
 print("Number of inliers: ", n_inliers)
 print(f'Database read process took {time.time() - starttime} seconds')
 
-# %%
-# Convert the dbscan_output array to a pandas DataFrame
-if_output = pd.DataFrame(input, columns=input.columns)
+# %% Create a data frame with the results of the isolation forest
+# Convert the if_output array to a pandas DataFrame
+if_output = input.copy()
 
-# Add the labels column to the dbscan_output at position 0
+# Add the labels column to the if_output at position 0
 if_output.insert(0, 'INDEX', total_payments.index)
 if_output.insert(1, 'labels_if', if_anomaly, True)
 if_output.insert(2, "scores", if_scores, True)
@@ -217,4 +218,9 @@ seconds = int((time.time() - totaltime) % 60)
 print(f'Isolation Forest process took {minutes} minutes and '
       f'{seconds} seconds')
 
+# %% Remove the first three columns of the input data frame
+# input = input.iloc[:, 3:]
+
+# Delete if_output data frame
+# del if_output 
 # %%

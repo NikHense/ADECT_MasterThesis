@@ -96,7 +96,7 @@ print('Only in if_noise: ', len(right_only))
 # ------------------------------------------------------------------------------
 # %% Create a data frame with only the normal data points
 # Rename the labels column
-data_normal = if_output
+data_normal = if_output.copy()
 data_normal = data_normal.rename(columns={'labels_if': 'Anomaly_if'})
 
 # Drop scores column
@@ -155,6 +155,7 @@ corr.style.background_gradient(cmap='coolwarm')
 
 
 # %% Merge the anomaly columns into the total_payments dataframe
+total_payments.insert(0, 'INDEX', range(0, len(total_payments)))
 total_payments = pd.merge(total_payments,
                           data_normal[['INDEX', 'Anomaly_dbscan',
                                        'Anomaly_hdbscan', 'Anomaly_if',

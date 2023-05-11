@@ -52,15 +52,15 @@ input_pca = pca.fit_transform(input_scaled)
 # Calculate the cum. proportion of variance explained
 cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
 
-# Plot the cum. proportion of variance explained, with the 95% threshold
+# Plot the cum. proportion of variance explained, with the 99% threshold
 num_components = range(1, len(input_scaled.columns) + 1)
 plt.plot(num_components, cumulative_variance_ratio, 'ro-', linewidth=2)
-plt.axhline(y=0.95, color='b', linestyle='--')
+plt.axhline(y=0.99, color='b', linestyle='--')
 plt.title('Cumulative Proportion of Variance Explained')
 plt.xlabel('Number of Principal Components')
 plt.ylabel('Cumulative Proportion of Variance Explained')
-# Find the index of the element in y_values that is closest to 0.95
-threshold_idx = (np.abs(cumulative_variance_ratio - 0.95)).argmin()
+# Find the index of the element in y_values that is closest to 0.99
+threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
 
 # Get the x-coordinate of the threshold
 threshold_x = num_components[threshold_idx]
@@ -69,17 +69,17 @@ threshold_x = num_components[threshold_idx]
 plt.axvline(x=threshold_x, color='b', linestyle='--')
 plt.show()
 
-# retrieve the number of components that explain 95% of the variance
-n_components = np.argmax(cumulative_variance_ratio >= 0.95)
+# retrieve the number of components that explain 99% of the variance
+n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 
-print(f'{n_components} principal components explain 95% of the variance')
+print(f'{n_components} principal components explain 99% of the variance')
 
 # if n_components > 15 than 15 otherwise
 # n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 if n_components > 15:
     n_components = 15
 else:
-    n_components = np.argmax(cumulative_variance_ratio >= 0.95)
+    n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 
 
 # %% Calculate the K-Distance Graph
@@ -118,8 +118,8 @@ distances = np.column_stack((np.arange(0, len(distances)), distances))
 
 # %% Calculate the maximum curvature point of the k-distance graph
 kneedle = KneeLocator(distances[:, 0], distances[:, 1],
-                      S=5,
-                      # interp_method='polynomial',
+                      S=4,
+                      #   interp_method='polynomial',
                       curve='convex', direction='increasing')
 
 print(round(kneedle.knee, 0))
@@ -164,8 +164,8 @@ kneedle.plot_knee()
 eps = round(kneedle.elbow_y, 3)
 
 # Define the optimal min_samples value (acc. Sander's 1998)
-min_samples_list = list(range(n_components, (2*n_components-1)+400, 1))
-# min_samples_list = list(range(n_components, 3000, 1))
+# min_samples_list = list(range(n_components, (2*n_components-1)+10, 1))
+# min_samples_list = list(range((2*n_components-2), (2*n_components+2)))
 
 
 # ---------------------------------------------------------------------
@@ -301,74 +301,74 @@ min_samples_list = list(range(n_components, (2*n_components-1)+400, 1))
 # DBSCAN (Calinski-Harbasz Score)
 # -----------------------------------------------------------------------------
 # %% Run DBSCAN, testing Calinski-Harabasz score instead of Silhouette score
-starttime = time.time()
+# starttime = time.time()
 
-# Initialize empty lists to store results
-results_chScore = []
-
-
-# Define a function to compute DBSCAN for a given parameter combination
-def dbscan_cluster(min_samples):
-    dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
-    labels_dbscan = dbscan.fit_predict(input_pca)
-    n_clusters_ = len(np.unique(labels_dbscan[labels_dbscan != -1]))
-    if n_clusters_ < 1:
-        CH_score = -1
-    # set score to a negative value if there is only one cluster
-    else:
-        CH_score = metrics.calinski_harabasz_score(input_pca, labels_dbscan)
-    n_noise_ = list(labels_dbscan).count(-1)
-    print(f'eps={eps:.6f}, min_samples={min_samples:4d}, '
-          f'n_clusters={n_clusters_:3d}, n_noise={n_noise_:4d}, '
-          f'CH_score={CH_score:.3f}')
-    return (eps, min_samples, n_clusters_, n_noise_, CH_score)
+# # Initialize empty lists to store results
+# results_chScore = []
 
 
-# Create a Pool object
-with Pool() as pool:
-    # Compute DBSCAN for all parameter combinations in parallel
-    results_chScore = pool.map(dbscan_cluster, min_samples_list)
-    pool.close()
-    pool.join()
+# # Define a function to compute DBSCAN for a given parameter combination
+# def dbscan_cluster(min_samples):
+#     dbscan = DBSCAN(eps=eps, min_samples=min_samples, n_jobs=1)
+#     labels_dbscan = dbscan.fit_predict(input_pca)
+#     n_clusters_ = len(np.unique(labels_dbscan[labels_dbscan != -1]))
+#     if n_clusters_ < 1:
+#         CH_score = -1
+#     # set score to a negative value if there is only one cluster
+#     else:
+#         CH_score = metrics.calinski_harabasz_score(input_pca, labels_dbscan)
+#     n_noise_ = list(labels_dbscan).count(-1)
+#     print(f'eps={eps:.6f}, min_samples={min_samples:4d}, '
+#           f'n_clusters={n_clusters_:3d}, n_noise={n_noise_:4d}, '
+#           f'CH_score={CH_score:.3f}')
+#     return (eps, min_samples, n_clusters_, n_noise_, CH_score)
 
-# Store the results in a pandas DataFrame
-results_chScore = pd.DataFrame(results_chScore,
-                               columns=['eps', 'min_samples', 'n_clusters',
-                                        'n_noise', 'CH_score'])
 
-results_chScore['CH_score'] = results_chScore['CH_score'].astype(float)
+# # Create a Pool object
+# with Pool() as pool:
+#     # Compute DBSCAN for all parameter combinations in parallel
+#     results_chScore = pool.map(dbscan_cluster, min_samples_list)
+#     pool.close()
+#     pool.join()
 
-# Find the parameter combination with the highest score
-best_row = results_chScore.iloc[results_chScore['CH_score'].idxmax()]
-best_params = (best_row['eps'], best_row['min_samples'],
-               best_row['n_clusters'], best_row['n_noise'])
-best_score = best_row['CH_score']
+# # Store the results in a pandas DataFrame
+# results_chScore = pd.DataFrame(results_chScore,
+#                                columns=['eps', 'min_samples', 'n_clusters',
+#                                         'n_noise', 'CH_score'])
+
+# results_chScore['CH_score'] = results_chScore['CH_score'].astype(float)
+
+# # Find the parameter combination with the highest score
+# best_row = results_chScore.iloc[results_chScore['CH_score'].idxmax()]
+# best_params = (best_row['eps'], best_row['min_samples'],
+#                best_row['n_clusters'], best_row['n_noise'])
+# best_score = best_row['CH_score']
 # print(f'Best parameter combination: eps={best_params[0]:.6f}, '
 #       f'min_samples={best_params[1]}, n_clusters={best_params[2]}, '
 #       f'n_noise={best_params[3]}, CH_score={best_score:.3f}')
 
-# Print the time the process took
-minutes = int((time.time() - starttime) / 60)
-seconds = int((time.time() - starttime) % 60)
-print(f'DBSCAN grid search process took {minutes} minutes and '
-      f'{seconds} seconds')
+# # Print the time the process took
+# minutes = int((time.time() - starttime) / 60)
+# seconds = int((time.time() - starttime) % 60)
+# print(f'DBSCAN grid search process took {minutes} minutes and '
+#       f'{seconds} seconds')
 
 # %% Plot the results of the grid search (Calinski-Harabasz scores)
 # Plot increase in score with increasing min_samples
-plt.figure(figsize=(10, 10))
-sns.lineplot(x='min_samples', y='CH_score', data=results_chScore)
-plt.title('DBSCAN parameter grid search')
-plt.xlabel('min_samples')
-plt.ylabel('CH_score')
-plt.show()
+# plt.figure(figsize=(10, 10))
+# sns.lineplot(x='min_samples', y='CH_score', data=results_chScore)
+# plt.title('DBSCAN parameter grid search')
+# plt.xlabel('min_samples')
+# plt.ylabel('CH_score')
+# plt.show()
 
 # %% Run best parameter DBSCAN
 starttime = time.time()
 # Define the optimal min_samples value (acc. Sander's 1998)
-# min_samples = (2*n_components-1)
+min_samples = (2*n_components-1)
 # Define the optimal min_samples value from the max Calinski-Harabasz score
-min_samples = results_chScore.iloc[results_chScore
-                                   ['CH_score'].idxmax()]['min_samples']
+# min_samples = results_chScore.iloc[results_chScore
+#                                    ['CH_score'].idxmax()]['min_samples']
 min_samples = int(min_samples)
 
 
@@ -386,7 +386,7 @@ n_noise_ = list(labels_dbscan).count(-1)
 
 print('eps: %0.3f' % eps)
 print('min_samples: %d' % min_samples)
-# print the silhouette score
+# print the Calinski-Harabasz score
 print("Calinski-Harabasz Score: %0.4f"
       % metrics.calinski_harabasz_score(input_pca, labels_dbscan))
 print('Estimated number of clusters: %d' % n_clusters_)

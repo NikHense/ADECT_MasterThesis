@@ -45,15 +45,15 @@ input_pca = pca.fit_transform(input_lof_scaled)
 # Calculate the cum. proportion of variance explained
 cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
 
-# Plot the cum. proportion of variance explained, with the 95% threshold
+# Plot the cum. proportion of variance explained, with the 99% threshold
 num_components = range(1, len(input_lof_scaled.columns) + 1)
 plt.plot(num_components, cumulative_variance_ratio, 'ro-', linewidth=2)
-plt.axhline(y=0.95, color='b', linestyle='--')
+plt.axhline(y=0.99, color='b', linestyle='--')
 plt.title('Cumulative Proportion of Variance Explained')
 plt.xlabel('Number of Principal Components')
 plt.ylabel('Cumulative Proportion of Variance Explained')
-# Find the index of the element in y_values that is closest to 0.95
-threshold_idx = (np.abs(cumulative_variance_ratio - 0.95)).argmin()
+# Find the index of the element in y_values that is closest to 0.99
+threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
 
 # Get the x-coordinate of the threshold
 threshold_x = num_components[threshold_idx]
@@ -62,17 +62,17 @@ threshold_x = num_components[threshold_idx]
 plt.axvline(x=threshold_x, color='b', linestyle='--')
 plt.show()
 
-# retrieve the number of components that explain 95% of the variance
-n_components = np.argmax(cumulative_variance_ratio >= 0.95)
+# retrieve the number of components that explain 99% of the variance
+n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 
-print(f'{n_components} principal components explain 95% of the variance')
+print(f'{n_components} principal components explain 99% of the variance')
 
 # if n_components > 15 than 15 otherwise
 # n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 if n_components > 15:
     n_components = 15
 else:
-    n_components = np.argmax(cumulative_variance_ratio >= 0.95)
+    n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 
 # %% Perform a final PCA on input_lof_scaled w/ best num. of components
 pca = PCA(n_components=n_components)
@@ -95,7 +95,7 @@ starttime = time.time()
 results_LOF_CH = []
 
 # Define a range of parameter values
-n = list(range(1, 151, 1))
+n = list(range(1, 100, 1))
 
 
 # Define a function to compute LOF for a given parameter combination
@@ -148,29 +148,32 @@ plt.ylabel('Number of Outliers')
 plt.show()
 
 # %% Calculate the maximum curvature point of the number of outliers
-num_outliers = results_LOF_CH['n_outlier']
-num_outliers = np.array(num_outliers)
+# num_outliers = results_LOF_CH['n_outlier']
+# num_outliers = np.array(num_outliers)
 
-x_lof = results_LOF_CH['n']
-x_lof = np.array(x_lof)
+# x_lof = results_LOF_CH['n']
+# x_lof = np.array(x_lof)
 
-kneedle = KneeLocator(x_lof, num_outliers,
-                      S=1,
-                      #  interp_method='polynomial',
-                      curve='convex', direction='decreasing')
+# kneedle = KneeLocator(x_lof, num_outliers,
+#                       S=1,
+#                       #  interp_method='polynomial',
+#                       curve='convex', direction='decreasing')
 
-print(round(kneedle.elbow, 0))
-print(round(kneedle.elbow_y, 3))
+# print(round(kneedle.elbow, 0))
+# print(round(kneedle.elbow_y, 3))
 
-plt.style.use('ggplot')
-kneedle.plot_knee_normalized()
-# plt.xlim(0, 0.05)
-# plt.ylim(0.95, 1)
-plt.show()
+# plt.style.use('ggplot')
+# kneedle.plot_knee_normalized()
+# # plt.xlim(0, 0.05)
+# # plt.ylim(0.95, 1)
+# plt.show()
 
-kneedle.plot_knee()
+# kneedle.plot_knee()
 
-best_n = kneedle.elbow
+# Get the best n with highest CH_score
+best_n = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]['n']
+best_n = int(best_n)
+# best_n = kneedle.elbow
 # %%
 lof_best = LocalOutlierFactor(n_neighbors=best_n, contamination='auto',
                               n_jobs=-1)
