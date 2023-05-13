@@ -181,7 +181,7 @@ fraud_invoices = pd.concat([fraud_invoices, synthetic_data],
 fraud_invoices1 = pd.concat([fraud_invoices, synthetic_data1],
                             ignore_index=True)
 fraud_invoices2 = pd.concat([fraud_invoices, synthetic_data2],
-                            ignore_index=True)
+                            ignore_index=True) # highest Overall Quality score
 fraud_invoices3 = pd.concat([fraud_invoices, synthetic_data3],
                             ignore_index=True)
 

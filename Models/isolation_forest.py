@@ -56,9 +56,11 @@ params = []
 def fit_isof(params):
     n_estimators, max_samples = params
     # starttime1 = time.time()
-    isof = IsolationForest(n_estimators=n_estimators, max_samples=max_samples,
-                           contamination='auto', random_state=42,
-                           verbose=0, n_jobs=1)
+    isof = IsolationForest(n_estimators=n_estimators,
+                           max_samples=max_samples,
+                           contamination='auto',
+                           random_state=42,
+                           verbose=1, n_jobs=1)
     isof.fit(input)
     # scores = isof.decision_function(input)
     anomaly = isof.predict(input)
@@ -178,8 +180,10 @@ avg_n_estimator = mean(n_estimators_list)
 
 isof = IsolationForest(n_estimators=avg_n_estimator,
                        max_samples=int(kneedle.elbow),
-                       contamination='auto', random_state=42,
-                       verbose=0, n_jobs=-1)
+                       contamination='auto',
+                       random_state=42,
+                       verbose=0,
+                       n_jobs=-1)
 
 isof.fit(input)
 

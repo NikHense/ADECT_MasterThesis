@@ -118,7 +118,7 @@ distances = np.column_stack((np.arange(0, len(distances)), distances))
 
 # %% Calculate the maximum curvature point of the k-distance graph
 kneedle = KneeLocator(distances[:, 0], distances[:, 1],
-                      S=4,
+                      S=5,
                       #   interp_method='polynomial',
                       curve='convex', direction='increasing')
 
@@ -369,11 +369,10 @@ min_samples = (2*n_components-1)
 # Define the optimal min_samples value from the max Calinski-Harabasz score
 # min_samples = results_chScore.iloc[results_chScore
 #                                    ['CH_score'].idxmax()]['min_samples']
-min_samples = int(min_samples)
-
 
 # Apply DBSCAN to cluster the data
-y_pred = DBSCAN(eps=eps, min_samples=min_samples,
+y_pred = DBSCAN(eps=eps,
+                min_samples=int(min_samples),
                 n_jobs=-1).fit(input_pca)
 
 core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
@@ -432,8 +431,8 @@ sns.distplot(hdbscan.outlier_scores_[np.isfinite(hdbscan.outlier_scores_)],
 
 plt.show()
 
-# Defined the threshold for the outlier scores at 95% quantile
-threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.95)
+# Defined the threshold for the outlier scores at 98% quantile
+threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.98)
 outliers_hdbscan = np.where(hdbscan.outlier_scores_ > threshold)[0]
 
 print(f'Number of outliers: {len(outliers_hdbscan)}')

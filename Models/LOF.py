@@ -95,12 +95,13 @@ starttime = time.time()
 results_LOF_CH = []
 
 # Define a range of parameter values
-n = list(range(1, 100, 1))
+n = list(range(1, 51, 1))
 
 
 # Define a function to compute LOF for a given parameter combination
 def LOF_CH(n):
-    lof = LocalOutlierFactor(n_neighbors=n, contamination='auto',
+    lof = LocalOutlierFactor(n_neighbors=n,
+                             contamination='auto',
                              n_jobs=1)
     labels_lof = lof.fit_predict(input_pca)
     # outlier_scores = lof.negative_outlier_factor_
@@ -172,10 +173,11 @@ plt.show()
 
 # Get the best n with highest CH_score
 best_n = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]['n']
-best_n = int(best_n)
 # best_n = kneedle.elbow
-# %%
-lof_best = LocalOutlierFactor(n_neighbors=best_n, contamination='auto',
+
+# %% Run LOF with best n
+lof_best = LocalOutlierFactor(n_neighbors=int(best_n),
+                              contamination='auto',
                               n_jobs=-1)
 labels_lof = lof_best.fit_predict(input_pca)
 CH_score = round(metrics.calinski_harabasz_score(input_pca, labels_lof), 4)
@@ -183,11 +185,11 @@ n_outlier = np.count_nonzero(labels_lof == -1)
 
 print("For n =", best_n, "CH_score :", CH_score, "n_outlier :", n_outlier)
 
-# %%
+# %% 
 # Invert the scaling applied by StandardScaler
 lof_output = scaler.inverse_transform(input_lof_scaled)
 
-# # Invert the PCA transformation
+# Invert the PCA transformation
 # input_pca_inverted = pca.inverse_transform(input_pca)
 
 # Convert the dbscan_output array to a pandas DataFrame

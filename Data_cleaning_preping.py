@@ -16,65 +16,32 @@ from sqlalchemy import create_engine, text
 # from sklearn.preprocessing import StandardScaler
 
 
-# %% params sql connection
-SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
-DB = 'ML'
-USERNAME = os.environ.get('USERNAME')
-PASSWORD = os.environ.get('PASSWORD')
+# # %% params sql connection
+# SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
+# DB = 'ML'
+# USERNAME = os.environ.get('USERNAME')
+# PASSWORD = os.environ.get('PASSWORD')
 
-# %% sql connection
-conn = ("Driver={ODBC Driver 18 for SQL Server};"
-        "Server="+SERVER+";"
-        "Database="+DB+";"
-        "UID="+USERNAME+";"
-        "PWD="+PASSWORD+";"
-        "Encrypt=YES;"
-        "TrustServerCertificate=YES")
-engine = create_engine(
-    f'mssql+pyodbc://?odbc_connect={conn}',
-    fast_executemany=True)
+# # %% sql connection
+# conn = ("Driver={ODBC Driver 18 for SQL Server};"
+#         "Server="+SERVER+";"
+#         "Database="+DB+";"
+#         "UID="+USERNAME+";"
+#         "PWD="+PASSWORD+";"
+#         "Encrypt=YES;"
+#         "TrustServerCertificate=YES")
+# engine = create_engine(
+#     f'mssql+pyodbc://?odbc_connect={conn}',
+#     fast_executemany=True)
 
-# %%
-SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
-total_payments = pd.DataFrame(engine.connect().execute(
-    text(SQL_TOTAL_PAYMENTS)))
-
-# %% Import Fraudulent Invoices
-# # Define the data types for each feature
-dtypes = {
-    'Object_Number': str
-}
-
-# Import Fraudulent Invoices csv file
-fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
-                             na_values='NA', sep=';')
+# # %%
+# SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
+# total_payments = pd.DataFrame(engine.connect().execute(
+#     text(SQL_TOTAL_PAYMENTS)))
 
 
-# Delete row with index 20 until 23
-fraud_invoices = fraud_invoices.drop([20, 21, 22, 23])
-
-# Replace the , in 'Ammount_Applied', 'Ammount_Initial' and 'Discount_Applied' with .
-fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
-fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
-fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
-fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
-
-
-# Transform data type of column 'Amount_Applied', 'Amount_Initial' and 'Discount_Applied' to float
-fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].astype(
-    float)
-fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].astype(
-    float)
-fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].astype(
-    float)
-fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].astype(float)
-
-# Replace ' ' with NaN
-fraud_invoices.replace(' ', np.nan, inplace=True)
-
-fraud_invoices.info()
 # %% add entries of fraudulent invoices to total_payments
-total_payments = pd.concat([total_payments, fraud_invoices], ignore_index=True)
+total_payments = pd.concat([total_payments, fraud_invoices2], ignore_index=True)
 
 # total_payments.insert(0, 'INDEX', total_payments.index)
 
