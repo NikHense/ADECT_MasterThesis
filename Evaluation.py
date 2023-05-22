@@ -8,11 +8,11 @@ import pandas as pd
 
 # Define true labels and predicted labels
 
-true_labels = total_payments['Fraud'] >= 1
-if_labels = total_payments['Anomaly_if']
-dbscan_labels = total_payments['Anomaly_dbscan']
-hdbscan_labels = total_payments['Anomaly_hdbscan']
-lof_labels = total_payments['Anomaly_lof']
+true_labels = total_payments_academic['Fraud'] >= 1
+if_labels = total_payments_academic['Anomaly_if']
+dbscan_labels = total_payments_academic['Anomaly_dbscan']
+hdbscan_labels = total_payments_academic['Anomaly_hdbscan']
+lof_labels = total_payments_academic['Anomaly_lof']
 
 # Create a dataframe with the true labels and the predicted labels
 df = pd.DataFrame({'True Label': true_labels,
@@ -57,21 +57,21 @@ for model_name in ['Isolation Forest', 'DBSCAN', 'HDBSCAN', 'LOF']:
 
 # %% Evaluate number ob anomaly scores when Review_Status = 'Proposal'
 # Get me all observations that have Review_Status = 'Proposal' and Anomaly_sum >= 2
-print(total_payments[(total_payments['Review_Status'] == 'Proposal') &
-                (total_payments['Anomaly_sum'] >= 2)].shape[0])
+print(total_payments_academic[(total_payments_academic['Review_Status'] == 'Proposal') &
+                (total_payments_academic['Anomaly_sum'] >= 2)].shape[0])
 
 # Count them
-print(total_payments[(total_payments['Review_Status'] == 'Proposal') &
-                (total_payments['Anomaly_sum'] >= 3)].shape[0])
+print(total_payments_academic[(total_payments_academic['Review_Status'] == 'Proposal') &
+                (total_payments_academic['Anomaly_sum'] >= 3)].shape[0])
 
-print(total_payments[(total_payments['Review_Status'] == 'Proposal') &
-                (total_payments['Anomaly_sum'] >= 4)].shape[0])
+print(total_payments_academic[(total_payments_academic['Review_Status'] == 'Proposal') &
+                (total_payments_academic['Anomaly_sum'] >= 4)].shape[0])
 
-thisweek = total_payments[(total_payments['Review_Status'] == 'Proposal') &
-                (total_payments['Anomaly_sum'] >= 2)]
+thisweek = total_payments_academic[(total_payments_academic['Review_Status'] == 'Proposal') &
+                (total_payments_academic['Anomaly_sum'] >= 2)]
 
 # Count the number of observations that have Proposal in Review_Status
-print(total_payments[total_payments['Review_Status'] == 'Proposal'].shape[0])
+print(total_payments_academic[total_payments_academic['Review_Status'] == 'Proposal'].shape[0])
 
 
 

@@ -17,7 +17,8 @@ DB = 'ML'
 USERNAME = os.environ.get('USERNAME')
 PASSWORD = os.environ.get('PASSWORD')
 
-# %% sql connection
+# %% SQL Connection
+# Be aware that this connection is only possible with the respective Usernames and Passwords
 conn = ("Driver={ODBC Driver 18 for SQL Server};"
         "Server="+SERVER+";"
         "Database="+DB+";"
@@ -29,20 +30,48 @@ engine = create_engine(
     f'mssql+pyodbc://?odbc_connect={conn}',
     fast_executemany=True)
 
-# %% Import total_payments
 SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
 total_payments = pd.DataFrame(engine.connect().execute(
                               text(SQL_TOTAL_PAYMENTS)))
 
+# %%
+# Create a dictionary with the column information
+column_info = {
+    'Column Number': list(range(len(total_payments.columns))),
+    'Feature Name': total_payments.columns,
+    'Data Type': total_payments.dtypes.values.astype(str)
+    }
+
+
+# Create a new DataFrame with the column information
+column_df = pd.DataFrame(column_info)
+
+# Generate the LaTeX table
+latex_table = column_df.to_latex(index=False)
+
+# Replace 'object' with 'textual' in the LaTeX table
+latex_table = latex_table.replace('object', 'textual')
+
+# Replace 'int64' with 'numerical' in the LaTeX table
+latex_table = latex_table.replace('int64', 'numerical')
+
+# Replace 'datetime64[ns]' with 'Date' in the LaTeX table
+latex_table = latex_table.replace('datetime64[ns]', 'date')
+
+# Print the LaTeX table
+print(latex_table)
+
 # %% Import Fraudulent Invoices
-# # Define the data types for each feature
-dtypes = {
+# Define the data types for each feature
+dtypes_fraud = {
     'Object_Number': str
 }
 
 # Import Fraudulent Invoices csv file
-fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
-                             na_values='NA', sep=';')
+fraud_invoices = pd.read_csv('Fraud_Invoices.csv',
+                             dtype=dtypes_fraud,
+                             na_values='NA',
+                             sep=';')
 
 
 # Delete row with index 20 until 23
@@ -55,7 +84,7 @@ fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.repl
 fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
 
 
-# Transform data type of column 'Amount_Applied', 'Amount_Initial' and 'Discount_Applied' to float
+# Transform data types to float
 fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].astype(
     float)
 fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].astype(
@@ -83,7 +112,7 @@ print(metadata.to_dict())
 print(metadata.primary_key)
 # ---------------------------------------------------------------------------
 
-# %% Generate synthetic data (Gaussian Copula Synthesizer)
+# %% Generate synthetic data (Gaussian Copula Synthesizer) 71% Quality
 
 # Step 1: Load Synthesizer
 synthesizer = GaussianCopulaSynthesizer.load(filepath='Synthesizer_Models/Gaussian_Copula_Synthesizer.pkl')
@@ -106,7 +135,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
 synthetic_data['Fraud'] = 2
 # ---------------------------------------------------------------------------
 
-# %% Generate synthetic data (CTGAN Synthesizer)
+# %% Generate synthetic data (CTGAN Synthesizer) 83% Quality
 
 # Step 1: Load the synthesizer
 synthesizer1 = CTGANSynthesizer.load(filepath='Synthesizer_Models/CTGAN_Synthesizer.pkl')
@@ -128,7 +157,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
 synthetic_data1['Fraud'] = 2
 # ---------------------------------------------------------------------------
 
-# %% Generate synthetic data (TVAE Synthesizer)
+# %% Generate synthetic data (TVAE Synthesizer) 87% Quality
 
 # Step 1: Load the synthesizer
 synthesizer2 = TVAESynthesizer.load(filepath='Synthesizer_Models/TVAE_Synthesizer.pkl')
@@ -151,7 +180,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
 synthetic_data2['Fraud'] = 2
 # ---------------------------------------------------------------------------
 
-# %% Generate synthetic data (CopulaGAN Synthesizer)
+# %% Generate synthetic data (CopulaGAN Synthesizer) 85% Quality
 
 # Step 1: Load the synthesizer
 synthesizer3 = CopulaGANSynthesizer.load(filepath='Synthesizer_Models/CopulaGAN_Synthesizer.pkl')

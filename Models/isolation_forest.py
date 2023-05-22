@@ -15,7 +15,7 @@ from statistics import mean
 # %% Start timer
 totaltime = time.time()
 
-# # %% Create the inital isolation forest function
+# # %% Create the inital isolation forest function for test reasons
 # starttime = time.time()
 # isof = IsolationForest(n_estimators=1000, max_samples=10000,
 #                        contamination='auto', random_state=42,
@@ -44,7 +44,7 @@ totaltime = time.time()
 starttime = time.time()
 
 # Define list of parameter values to test
-n_estimators_list = list(range(100, 1002, 100))
+n_estimators_list = list(range(500, 1001, 100))
 max_samples_list = list(range(1000, len(input), 1000))
 
 # Initialize empty lists to store results
@@ -205,7 +205,7 @@ print(f'Database read process took {time.time() - starttime} seconds')
 if_output = input.copy()
 
 # Add the labels column to the if_output at position 0
-if_output.insert(0, 'INDEX', total_payments.index)
+if_output.insert(0, 'INDEX', total_payments_academic.index)
 if_output.insert(1, 'labels_if', if_anomaly, True)
 if_output.insert(2, "scores", if_scores, True)
 

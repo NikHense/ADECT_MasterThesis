@@ -431,8 +431,8 @@ sns.distplot(hdbscan.outlier_scores_[np.isfinite(hdbscan.outlier_scores_)],
 
 plt.show()
 
-# Defined the threshold for the outlier scores at 98% quantile
-threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.98)
+# Defined the threshold for the outlier scores at 95% quantile
+threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.95)
 outliers_hdbscan = np.where(hdbscan.outlier_scores_ > threshold)[0]
 
 print(f'Number of outliers: {len(outliers_hdbscan)}')
@@ -453,7 +453,7 @@ dbscan_output = pd.DataFrame(dbscan_output, columns=input_scaled.columns)
 dbscan_output['Line_Number'] = dbscan_output['Line_Number'].round(0)
 
 # Add the labels column to the dbscan_output at position 0
-dbscan_output.insert(0, 'INDEX', total_payments.index)
+dbscan_output.insert(0, 'INDEX', total_payments_academic.index)
 dbscan_output.insert(1, 'labels_dbscan', labels_dbscan)
 dbscan_output.insert(2, 'Anomaly_dbscan', dbscan_output['labels_dbscan'] == -1)
 
@@ -473,7 +473,7 @@ hdbscan_output = pd.DataFrame(hdbscan_output, columns=input.columns)
 hdbscan_output['Line_Number'] = hdbscan_output['Line_Number'].round(0)
 
 # Add the labels column to the dbscan_output at position 0
-hdbscan_output.insert(0, 'INDEX', total_payments.index)
+hdbscan_output.insert(0, 'INDEX', total_payments_academic.index)
 hdbscan_output.insert(1, 'labels_hdbscan', labels_hdbscan)
 hdbscan_output.insert(2, 'Noise_hdbscan',
                       hdbscan_output['labels_hdbscan'] == -1)

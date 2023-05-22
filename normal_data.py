@@ -104,14 +104,20 @@ data_normal = data_normal.drop(['scores'], axis=1)
 
 # %%
 # Merge the 'labels_dbscan' column from dbscan_output data_normal based on index
-data_normal = pd.merge(data_normal, dbscan_output[['INDEX', 'Anomaly_dbscan']],
-                       on='INDEX', how='left')
+data_normal = pd.merge(data_normal,
+                       dbscan_output[['INDEX', 'Anomaly_dbscan']],
+                       on='INDEX',
+                       how='left')
 
-data_normal = pd.merge(data_normal, hdbscan_output[['INDEX', 'Anomaly_hdbscan']],
-                       on='INDEX', how='left')
+data_normal = pd.merge(data_normal,
+                       hdbscan_output[['INDEX', 'Anomaly_hdbscan']],
+                       on='INDEX',
+                       how='left')
 
-data_normal = pd.merge(data_normal, lof_output[['INDEX', 'Anomaly_lof']],
-                       on='INDEX', how='left')
+data_normal = pd.merge(data_normal,
+                       lof_output[['INDEX', 'Anomaly_lof']],
+                       on='INDEX',
+                       how='left')
 
 # %%
 # Align the labels columns next to each other
@@ -154,27 +160,35 @@ corr = data_normal[['Anomaly_dbscan', 'Anomaly_hdbscan', 'Anomaly_if',
 corr.style.background_gradient(cmap='coolwarm')
 
 
-# %% Merge the anomaly columns into the total_payments dataframe
-total_payments.insert(0, 'INDEX', range(0, len(total_payments)))
-total_payments = pd.merge(total_payments,
+# %% Merge the anomaly columns into the total_payments_academic dataframe
+total_payments_academic.insert(0, 'INDEX', range(0, len(total_payments_academic)))
+total_payments_academic = pd.merge(total_payments_academic,
                           data_normal[['INDEX', 'Anomaly_dbscan',
                                        'Anomaly_hdbscan', 'Anomaly_if',
-                                       'Anomaly_lof', 'Anomaly_sum',]],
+                                       'Anomaly_lof',
+                                       'Anomaly_sum',]],
                           on='INDEX', how='left')
 
-# # %% Export the total_payments dataframe to a csv file
-# total_payments.to_csv('total_payments_results.csv', index=False)
+# # %% Export the total_payments_academic dataframe to a csv file
+# total_payments_academic.to_csv('total_payments_academic_results.csv',
+#                                index=False)
 
 # %%
 # Create a scatter plot with Anomaly_sum_x >= 2 with color based on the 'Anomaly_sum_x' column
 
 
-df_filtered = total_payments[total_payments['Anomaly_sum'] >= 3]
+df_filtered = total_payments_academic[total_payments_academic['Anomaly_sum'] >= 3]
 color_dict = {1: 'green', 2: 'blue', 3: 'orange', 4: 'red'}
 
-df_filtered.plot.scatter(x='Amount_Applied', y='Payment_Number', c=df_filtered['Anomaly_sum'].map(color_dict))
+df_filtered.plot.scatter(x='Amount_Applied',
+                         y='Payment_Number',
+                         c=df_filtered['Anomaly_sum'].map(color_dict))
 
-plt.legend(handles=[plt.plot([],[],color=color_dict[val], marker='o', ls='', mec='none', label='Anomaly Sum {}'.format(val))[0] for val in color_dict.keys()])
+plt.legend(handles=[plt.plot([], [],
+                             color=color_dict[val],
+                             marker='o',
+                             ls='', mec='none',
+                             label='Anomaly Sum {}'.format(val))[0] for val in color_dict.keys()])
 plt.title('Scatter Plot of Payment Number vs. Amount Applied with Anomaly Sum Highlighted')
 plt.show()
 

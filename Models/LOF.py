@@ -196,7 +196,7 @@ lof_output = scaler.inverse_transform(input_lof_scaled)
 lof_output = pd.DataFrame(lof_output, columns=input_lof_scaled.columns)
 
 # Add the labels column to the dbscan_output at position 0
-lof_output.insert(0, 'INDEX', total_payments.index)
+lof_output.insert(0, 'INDEX', total_payments_academic.index)
 lof_output.insert(1, 'labels_lof', labels_lof)
 lof_output.insert(2, 'Anomaly_lof', lof_output['labels_lof'] == -1)
 

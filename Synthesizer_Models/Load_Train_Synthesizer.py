@@ -1,4 +1,4 @@
-# %% Import libraries
+\# %% Import libraries
 import pandas as pd
 import numpy as np
 from sdv.metadata import SingleTableMetadata
@@ -20,8 +20,8 @@ fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
                              na_values='NA', sep=';')
 
 
-# Delete row with index 20 until 23
-fraud_invoices = fraud_invoices.drop([20, 21, 22, 23])
+# # Delete row with index 20 until 23
+# fraud_invoices = fraud_invoices.drop([20, 21, 22, 23])
 
 # Replace the , in 'Ammount_Applied', 'Ammount_Initial' and 'Discount_Applied' with
 fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
@@ -208,4 +208,4 @@ synthesizer3.save(filepath='CopulaGAN_Synthesizer.pkl')
 # Load the synthesizer
 synthesizer3 = CopulaGANSynthesizer.load(filepath='CopulaGAN_Synthesizer.pkl')
 
-
+# %%
