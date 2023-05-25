@@ -2,6 +2,8 @@
 import os
 import pandas as pd
 import numpy as np
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 from sqlalchemy import create_engine, text
 from sdv.metadata import SingleTableMetadata
 from sdv.single_table import GaussianCopulaSynthesizer
@@ -11,87 +13,172 @@ from sdv.single_table import CopulaGANSynthesizer
 from sdv.evaluation.single_table import evaluate_quality
 from sdv.evaluation.single_table import run_diagnostic
 from sklearn.preprocessing import LabelEncoder
+from anonymizedf.anonymizedf import anonymize
 
-# %% Params SQL connection
-SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
-DB = 'ML'
-USERNAME = os.environ.get('USERNAME')
-PASSWORD = os.environ.get('PASSWORD')
+# # %% Params SQL connection
+# SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
+# DB = 'ML'
+# USERNAME = os.environ.get('USERNAME')
+# PASSWORD = os.environ.get('PASSWORD')
 
-# %% SQL Connection
-# Be aware that this connection is only possible with the
-# respective Usernames and Passwords
-conn = ("Driver={ODBC Driver 18 for SQL Server};"
-        "Server="+SERVER+";"
-        "Database="+DB+";"
-        "UID="+USERNAME+";"
-        "PWD="+PASSWORD+";"
-        "Encrypt=YES;"
-        "TrustServerCertificate=YES")
-engine = create_engine(
-    f'mssql+pyodbc://?odbc_connect={conn}',
-    fast_executemany=True)
+# # %% SQL Connection
+# # Be aware that this connection is only possible with the
+# # respective Usernames and Passwords
+# conn = ("Driver={ODBC Driver 18 for SQL Server};"
+#         "Server="+SERVER+";"
+#         "Database="+DB+";"
+#         "UID="+USERNAME+";"
+#         "PWD="+PASSWORD+";"
+#         "Encrypt=YES;"
+#         "TrustServerCertificate=YES")
+# engine = create_engine(
+#     f'mssql+pyodbc://?odbc_connect={conn}',
+#     fast_executemany=True)
 
-SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
-total_payments = pd.DataFrame(engine.connect().execute(
-                              text(SQL_TOTAL_PAYMENTS)))
-# %% Print out a LaTex table with the column information
-# # Create a dictionary with the column information
-# column_info = {
-#     'Column Number': list(range(len(total_payments.columns))),
-#     'Feature Name': total_payments.columns,
-#     'Data Type': total_payments.dtypes.values.astype(str)
-#     }
+# SQL_TOTAL_PAYMENTS = 'SELECT * FROM ADECT.TOTAL_PAYMENTS'
+# total_payments = pd.DataFrame(engine.connect().execute(
+#                               text(SQL_TOTAL_PAYMENTS)))
+# # %% Print out a LaTex table with the column information
+# # # Create a dictionary with the column information
+# # column_info = {
+# #     'Column Number': list(range(len(total_payments.columns))),
+# #     'Feature Name': total_payments.columns,
+# #     'Data Type': total_payments.dtypes.values.astype(str)
+# #     }
 
 
-# # Create a new DataFrame with the column information
-# column_df = pd.DataFrame(column_info)
+# # # Create a new DataFrame with the column information
+# # column_df = pd.DataFrame(column_info)
 
-# # Generate the LaTeX table
-# latex_table = column_df.to_latex(index=False)
+# # # Generate the LaTeX table
+# # latex_table = column_df.to_latex(index=False)
 
-# # Replace 'object' with 'textual' in the LaTeX table
-# latex_table = latex_table.replace('object', 'textual')
+# # # Replace 'object' with 'textual' in the LaTeX table
+# # latex_table = latex_table.replace('object', 'textual')
 
-# # Replace 'int64' with 'numerical' in the LaTeX table
-# latex_table = latex_table.replace('int64', 'numerical')
+# # # Replace 'int64' with 'numerical' in the LaTeX table
+# # latex_table = latex_table.replace('int64', 'numerical')
 
-# # Replace 'datetime64[ns]' with 'Date' in the LaTeX table
-# latex_table = latex_table.replace('datetime64[ns]', 'date')
+# # # Replace 'datetime64[ns]' with 'Date' in the LaTeX table
+# # latex_table = latex_table.replace('datetime64[ns]', 'date')
 
-# # Print the LaTeX table
-# print(latex_table)
+# # # Print the LaTeX table
+# # print(latex_table)
 
-# %% Due to confidentiality reasons, the data is not available as it is
-# and has to be cut down
-# Select specific columns, resulting in final dataset for analysis
-total_payments_academic = total_payments[['Payment_Number',
-                                          'Gen_Jnl_Line_Number',
-                                          'Line_Number',
-                                          'Object_Number',
-                                          'Vendor_Number',
-                                          'Country_Region_Code',
-                                          'Amount_Applied',
-                                          'Amount_Initial',
-                                          'Discount_Applied',
-                                          'Discount_Allowed',
-                                          'Discount_Rate',
-                                          'Payment_Method_Code',
-                                          'Customer_IBAN',
-                                          'Vendor_IBAN',
-                                          'Vendor_BIC',
-                                          'Vendor_Bank_Origin',
-                                          'Posting_Date',
-                                          'Due_Date',
-                                          'Created_By',
-                                          'Source_System',
-                                          'Mandant',
-                                          'Review_Status'
-                                          ]]
+# # %% Import Fraudulent Invoices
+# # Define the data types for each feature
+# dtypes_fraud = {
+#     'Object_Number': str
+# }
 
-# Save the final dataset as a csv file
-total_payments_academic.to_csv('total_payments_academic.csv',
-                               sep=";", index=False)
+# # Import Fraudulent Invoices csv file
+# fraud_invoices = pd.read_csv('Fraud_Invoices.csv',
+#                              dtype=dtypes_fraud,
+#                              na_values='NA',
+#                              sep=';')
+
+# # Replace the ',' with '.' in the following columns
+# fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
+# fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
+# fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
+# fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
+
+
+# # Transform data types to float
+# fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].astype(
+#     float)
+# fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].astype(
+#     float)
+# fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].astype(
+#     float)
+# fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].astype(float)
+
+# # Replace ' ' with NaN
+# fraud_invoices.replace(' ', np.nan, inplace=True)
+
+# fraud_invoices.info()
+
+
+# # %% Add fraud_invoices to total_payments
+# # Add fraud_invoices to total_payments
+# total_payments = total_payments.append(fraud_invoices, ignore_index=True)
+
+                          
+# # %% Anonymize the data
+# # Prepare the data to be anonymized
+# an = anonymize(total_payments)
+
+# # Select what data you want to anonymize and your preferred style
+# an.fake_categories('Created_By')
+# an.fake_ids('Vendor_IBAN')
+# an.fake_ids('Customer_IBAN')
+
+# # # Save the final dataset as a csv file (test purposes)
+# # total_payments.to_csv('total_payments_fakes.csv',
+# #                                sep=";", index=False)
+
+# # %% Split up fraud_invoices from total_payments
+# # Create two independent data sets
+# fraud_invoices = total_payments[total_payments['Fraud'] == 1]
+# total_payments = total_payments[total_payments['Fraud'] != 1]
+
+# # Delete all columns that contain only NaN values
+# fraud_invoices = fraud_invoices.dropna(axis=1, how='all')
+
+# # Delete 'Vendor_IBAN'  and 'Created_By' columns
+# fraud_invoices = fraud_invoices.drop(['Vendor_IBAN', 'Created_By',
+#                                       'Posting_Description_1',
+#                                       'Document_Number_external',
+#                                       'Document_Number_internal',
+#                                       'Customer_IBAN'], axis=1)
+# total_payments = total_payments.drop(['Vendor_IBAN', 'Created_By',
+#                                       'Customer_IBAN'], axis=1)
+
+# # Rename 'Fake_Vendor_IBAN' to 'Vendor_IBAN'
+# fraud_invoices = fraud_invoices.rename(columns={'Fake_Vendor_IBAN': 'Vendor_IBAN'})
+# total_payments = total_payments.rename(columns={'Fake_Vendor_IBAN': 'Vendor_IBAN'})
+
+# # Rename 'Fake_Created_By' to 'Created_By'
+# fraud_invoices = fraud_invoices.rename(columns={'Fake_Created_By': 'Created_By'})
+# total_payments = total_payments.rename(columns={'Fake_Created_By': 'Created_By'})
+
+# # Rename 'Fake_Customer_IBAN' to 'Customer_IBAN'
+# fraud_invoices = fraud_invoices.rename(columns={'Fake_Customer_IBAN': 'Customer_IBAN'})
+# total_payments = total_payments.rename(columns={'Fake_Customer_IBAN': 'Customer_IBAN'})
+
+# # %% Due to confidentiality reasons, the data is not available as it is
+# # and has to be cut down
+# # Select specific columns, resulting in final dataset for analysis
+# total_payments_academic = total_payments[['Payment_Number',
+#                                           'Gen_Jnl_Line_Number',
+#                                           'Line_Number',
+#                                           'Object_Number',
+#                                           'Vendor_Number',
+#                                           'Country_Region_Code',
+#                                           'Amount_Applied',
+#                                           'Amount_Initial',
+#                                           'Discount_Applied',
+#                                           'Discount_Allowed',
+#                                           'Discount_Rate',
+#                                           'Payment_Method_Code',
+#                                           'Customer_IBAN',
+#                                           'Vendor_IBAN',
+#                                           'Vendor_BIC',
+#                                           'Vendor_Bank_Origin',
+#                                           'Posting_Date',
+#                                           'Due_Date',
+#                                           'Created_By',
+#                                           'Source_System',
+#                                           'Mandant',
+#                                           'Review_Status'
+#                                           ]]
+
+# # %% 
+# # Save the final datasets as a csv file
+# total_payments_academic.to_csv('total_payments_academic.csv',
+#                                sep=";", index=False)
+# fraud_invoices.to_csv('Fraud_Invoices_final.csv',
+#                       sep=";", index=False)
 
 # %% Load the final dataset
 # Define the data types for each feature as they were in the original dataset
@@ -139,17 +226,16 @@ dtypes_fraud = {
 }
 
 # Import Fraudulent Invoices csv file
-fraud_invoices = pd.read_csv('Fraud_Invoices.csv',
+fraud_invoices = pd.read_csv('Fraud_Invoices_final.csv',
                              dtype=dtypes_fraud,
                              na_values='NA',
                              sep=';')
 
-# Replace the ',' with '.' in the following columns
-fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
-fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
-fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
-fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
-
+# # Replace the ',' with '.' in the following columns
+# fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
+# fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
+# fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
+# fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
 
 # Transform data types to float
 fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].astype(
@@ -194,6 +280,10 @@ quality_report = evaluate_quality(real_data=fraud_invoices,
                                   synthetic_data=synthetic_data,
                                   metadata=metadata)
 
+# Visualize the quality report
+# quality_report.get_visualization(property_name='Column Shapes')
+# quality_report.get_visualization(property_name='Column Pair Trends')
+
 # Run a diagnostic on the synthetic data
 diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    synthetic_data=synthetic_data,
@@ -218,12 +308,17 @@ quality_report = evaluate_quality(real_data=fraud_invoices,
                                   synthetic_data=synthetic_data1,
                                   metadata=metadata)
 
+# Visualize the quality report
+# quality_report.get_visualization(property_name='Column Shapes')
+# quality_report.get_visualization(property_name='Column Pair Trends')
+
 # Run a diagnostic on the synthetic data
 diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    synthetic_data=synthetic_data1,
                                    metadata=metadata)
 # Change values in 'Fraud' of sybthetic_data1 to 2
 synthetic_data1['Fraud'] = 2
+
 # ---------------------------------------------------------------------------
 
 # %% Generate synthetic data (TVAE Synthesizer) 87% Quality
@@ -241,6 +336,10 @@ quality_report = evaluate_quality(real_data=fraud_invoices,
                                   synthetic_data=synthetic_data2,
                                   metadata=metadata)
 
+# Visualize the quality report
+# quality_report.get_visualization(property_name='Column Shapes')
+# quality_report.get_visualization(property_name='Column Pair Trends')
+
 # Run a diagnostic on the synthetic data
 diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    synthetic_data=synthetic_data2,
@@ -248,6 +347,8 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
 
 # Change values in 'Fraud' of sybthetic_data2 to 2
 synthetic_data2['Fraud'] = 2
+
+
 # ---------------------------------------------------------------------------
 
 # %% Generate synthetic data (CopulaGAN Synthesizer) 85% Quality
@@ -264,6 +365,10 @@ synthetic_data3 = synthesizer3.sample(num_rows=int(
 quality_report = evaluate_quality(real_data=fraud_invoices,
                                   synthetic_data=synthetic_data3,
                                   metadata=metadata)
+
+# Visualize the quality report
+# quality_report.get_visualization(property_name='Column Shapes')
+# quality_report.get_visualization(property_name='Column Pair Trends')
 
 # Run a diagnostic on the synthetic data
 diagnostic_report = run_diagnostic(real_data=fraud_invoices,
@@ -288,10 +393,11 @@ fraud_invoices4 = pd.concat([fraud_invoices, synthetic_data3],
 # Data Preprocessing & Feature Engineering
 # ---------------------------------------------------------------------------
 # %% Add entries of fraudulent invoices to total_payments
-total_payments_academic = pd.concat([total_payments_academic, fraud_invoices3], ignore_index=True)
+total_payments_academic = pd.concat([total_payments_academic, fraud_invoices4], ignore_index=True)
 
-# Transforn nan of 'Fraud' column to 0
+# Transforn nan of 'Fraud' column to 0 and 'Review_Status' to 'synthetic'
 total_payments_academic['Fraud'] = total_payments_academic['Fraud'].fillna(0)
+total_payments_academic['Review_Status'] = total_payments_academic['Review_Status'].fillna('synthetic')
 
 total_payments_academic.info()
 

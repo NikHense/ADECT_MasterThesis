@@ -44,7 +44,7 @@ totaltime = time.time()
 starttime = time.time()
 
 # Define list of parameter values to test
-n_estimators_list = list(range(500, 1001, 100))
+n_estimators_list = list(range(100, 1002, 100))
 max_samples_list = list(range(1000, len(input), 1000))
 
 # Initialize empty lists to store results

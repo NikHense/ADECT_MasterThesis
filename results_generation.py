@@ -98,4 +98,43 @@ with open('Origin of Data, list of entities.tex', 'w') as file:
     file.write(latex_table)
 
 print("LaTeX table has been saved to 'Origin of Data, list of entities.tex'.")
+
+# %% Create Latex Tabel with the Overall Quality Score of each Syntheziser Model
+
+# Create a dictionary with the column data
+data2 = {
+    'Model': ['GaussianCopula_Synthesizer',
+              'CTGAN_Synthesizer',
+              'TVAE_Synthesizer',
+              'CopulaGAN_Synthesizer'
+              ],
+    'Overall Quality Score': ['71.56%',
+                              '85.46%',
+                              '87.26%',
+                              '85.53'
+                              ],
+    'Column Shapes': ['82.25%',
+                      '89.00%',
+                      '91.10%',
+                      '90.45%'             
+                      ],
+    'Column Pair Trends': ['60.87%',
+                           '81.93%',
+                           '83.42%',
+                           '80.61%'
+                           ]}
+
+# Create a DataFrame using the dictionary
+df2 = pd.DataFrame(data2)
+
+# Convert the DataFrame to a LaTeX table
+latex_table2 = df2.to_latex(index=False,
+                            caption='Overall Quality Score Summary of each Syntheziser Model',
+                            column_format='lrrr')
+
+latex_table2
+
+
+                                             
+
 # %%

@@ -59,6 +59,7 @@ plt.axhline(y=0.99, color='b', linestyle='--')
 plt.title('Cumulative Proportion of Variance Explained')
 plt.xlabel('Number of Principal Components')
 plt.ylabel('Cumulative Proportion of Variance Explained')
+
 # Find the index of the element in y_values that is closest to 0.99
 threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
 
