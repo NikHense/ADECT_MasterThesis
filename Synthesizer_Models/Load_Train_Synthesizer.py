@@ -1,6 +1,7 @@
-\# %% Import libraries
+# %% Import libraries
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from sdv.metadata import SingleTableMetadata
 from sdv.single_table import GaussianCopulaSynthesizer
 from sdv.single_table import CTGANSynthesizer
@@ -9,6 +10,7 @@ from sdv.single_table import CopulaGANSynthesizer
 from sdv.evaluation.single_table import evaluate_quality
 from sdv.evaluation.single_table import run_diagnostic
 
+
 # %% Import Fraudulent Invoices
 # # Define the data types for each feature
 dtypes = {
@@ -16,7 +18,7 @@ dtypes = {
 }
 
 # Import Fraudulent Invoices csv file
-fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
+fraud_invoices = pd.read_csv('Fraud_Invoices_final.csv', dtype=dtypes,
                              na_values='NA', sep=';')
 
 
@@ -24,10 +26,10 @@ fraud_invoices = pd.read_csv('Fraud_Invoices.csv', dtype=dtypes,
 # fraud_invoices = fraud_invoices.drop([20, 21, 22, 23])
 
 # Replace the , in 'Ammount_Applied', 'Ammount_Initial' and 'Discount_Applied' with
-fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
-fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
-fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
-fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
+# fraud_invoices['Amount_Applied'] = fraud_invoices['Amount_Applied'].str.replace(',', '.')
+# fraud_invoices['Amount_Initial'] = fraud_invoices['Amount_Initial'].str.replace(',', '.')
+# fraud_invoices['Discount_Applied'] = fraud_invoices['Discount_Applied'].str.replace(',', '.')
+# fraud_invoices['Discount_Rate'] = fraud_invoices['Discount_Rate'].str.replace(',', '.')
 
 
 # Transform data type of column 'Amount_Applied', 'Amount_Initial' and 'Discount_Applied' to float
@@ -124,8 +126,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    synthetic_data=synthetic_data1,
                                    metadata=metadata)
 
-# %% Save  & Load CTGAN Synthesizer
-
+# %% Save & Load CTGAN Synthesizer
 # Save the synthesizer
 synthesizer1.save(filepath='CTGAN_Synthesizer.pkl')
 
@@ -161,8 +162,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    synthetic_data=synthetic_data2,
                                    metadata=metadata)
 
-# %% Save  & Load TVAE Synthesizer
-
+# %% Save & Load TVAE Synthesizer
 # Save the synthesizer
 synthesizer2.save(filepath='TVAE_Synthesizer.pkl')
 
@@ -200,8 +200,7 @@ diagnostic_report = run_diagnostic(real_data=fraud_invoices,
                                    metadata=metadata)
 
 
-# %% Save  & Load CopulaGAN Synthesizer
-
+# %% Save & Load CopulaGAN Synthesizer
 # Save the synthesizer
 synthesizer3.save(filepath='CopulaGAN_Synthesizer.pkl')
 
