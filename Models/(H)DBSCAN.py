@@ -9,9 +9,10 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
-from multiprocessing import Pool
+# from multiprocessing import Pool
 from kneed import KneeLocator
 import hdbscan
+from sklearn.manifold import TSNE
 
 # -----------------------------------------------------------------------------
 # Parameter selection for DBSCAN & HDBSCAN
@@ -19,12 +20,26 @@ import hdbscan
 # %% Start timer
 totaltime = time.time()
 
+# %% THIS IS THE OPTIMAL SOLUTION, WHICH DOES NOT WORK BECAUSE THE KERNAL KEEPS CRUSHING!!!
+# # Get number of features in the input data
+# n_components = len(input.columns)
+
+# # Define the optimal min_samples value (acc. Sander's 1998)
+# min_samples = (2*n_components-1)
+
+# # Define the optimal eps value using k-distance graph
+# neighbors = NearestNeighbors(n_neighbors=min_samples-1)
+# neighbors_fit = neighbors.fit(input)
+# distances, indices = neighbors_fit.kneighbors(input)
+
+# # Plot the distances
+# distances = np.sort(distances, axis=0)
+# distances = distances[:,1]
+# plt.plot(distances)
+
+# SINCE THE ABOVE CODE IS NOT WORKING, THE FOLLOWING CODE IS USED INSTEAD!!!
+
 # %% Scaling the input data
-
-# scaler = MinMaxScaler(feature_range=(-25, 25))
-# input_scaled = scaler.fit_transform(input)
-# input_scaled = pd.DataFrame(input_scaled, columns=input.columns)
-
 
 scaler = StandardScaler()
 input_scaled = scaler.fit_transform(input)
@@ -54,6 +69,7 @@ cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
 
 # Plot the cum. proportion of variance explained, with the 99% threshold
 num_components = range(1, len(input_scaled.columns) + 1)
+plt.style.use('ggplot')
 plt.plot(num_components, cumulative_variance_ratio, 'ro-', linewidth=2)
 plt.axhline(y=0.99, color='b', linestyle='--')
 plt.title('Cumulative Proportion of Variance Explained')
@@ -61,13 +77,14 @@ plt.xlabel('Number of Principal Components')
 plt.ylabel('Cumulative Proportion of Variance Explained')
 
 # Find the index of the element in y_values that is closest to 0.99
-threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
+threshold_idx = (np.abs(cumulative_variance_ratio - 0.991)).argmin()
 
-# Get the x-coordinate of the threshold
-threshold_x = num_components[threshold_idx]
+# Get the x-coordinate of the threshold (-1 becasue of rounding effect)
+threshold_x = num_components[threshold_idx]-1
 
 # Add a vertical line at the threshold x-coordinate
 plt.axvline(x=threshold_x, color='b', linestyle='--')
+plt.title('')
 plt.show()
 
 # retrieve the number of components that explain 99% of the variance
@@ -95,10 +112,13 @@ nbrs = neigh.fit(input_pca)
 distances, indices = nbrs.kneighbors(input_pca)
 
 # Plot the k-distance graph
+# Sort the distances of each point to its kth nearest neighbor in descending order
 distances = np.sort(distances, axis=0)
-distances = distances[:, 1]
-plt.figure(figsize=(20, 10))
-plt.plot(distances, 'ro-', linewidth=2)
+distances = distances[:,-1]
+distances = distances[::-1]
+
+plt.figure(figsize=(10, 10))
+plt.plot(distances, linewidth=2)
 plt.title('K-Distance Graph')
 plt.xlabel('Data Point sorted by distance')
 plt.ylabel('Epsilon (distance to kth nearest neighbor)')
@@ -121,7 +141,7 @@ distances = np.column_stack((np.arange(0, len(distances)), distances))
 kneedle = KneeLocator(distances[:, 0], distances[:, 1],
                       S=5,
                       #   interp_method='polynomial',
-                      curve='convex', direction='increasing')
+                      curve='convex', direction='decreasing')
 
 print(round(kneedle.knee, 0))
 print(round(kneedle.elbow_y, 3))
@@ -133,7 +153,15 @@ kneedle.plot_knee_normalized()
 # plt.ylim(0.9, 1)
 plt.show()
 
+plt.style.use('ggplot')
 kneedle.plot_knee()
+plt.text(kneedle.elbow + 2000, kneedle.elbow_y + 1,
+         f'epsilon ({round(kneedle.elbow_y, 3)})',
+         fontsize=11)
+plt.xlabel('Data points sorted by distance')
+plt.ylabel('Epsilon (distance to kth nearest neighbor)')
+plt.title('')
+plt.show()
 
 # plt.axhline(y=kneedle.elbow_y, color='r', linestyle='--')
 # plt.text(kneedle.elbow - 10000, kneedle.elbow_y + 0.1,
@@ -374,7 +402,9 @@ min_samples = (2*n_components-1)
 # Apply DBSCAN to cluster the data
 y_pred = DBSCAN(eps=eps,
                 min_samples=int(min_samples),
-                n_jobs=-1).fit(input_pca)
+                n_jobs=-1)
+
+y_pred.fit(input_pca)
 
 core_samples_mask = np.zeros_like(y_pred.labels_, dtype=bool)
 core_samples_mask[y_pred.core_sample_indices_] = True
@@ -386,9 +416,9 @@ n_noise_ = list(labels_dbscan).count(-1)
 
 print('eps: %0.3f' % eps)
 print('min_samples: %d' % min_samples)
-# print the Calinski-Harabasz score
-print("Calinski-Harabasz Score: %0.4f"
-      % metrics.calinski_harabasz_score(input_pca, labels_dbscan))
+# # print the Calinski-Harabasz score
+# print("Calinski-Harabasz Score: %0.4f"
+#       % metrics.calinski_harabasz_score(input_pca, labels_dbscan))
 print('Estimated number of clusters: %d' % n_clusters_)
 print('Estimated number of noise points: %d' % n_noise_)
 
@@ -400,6 +430,27 @@ seconds = int((time.time() - totaltime) % 60)
 print(f' Total DBSCAN process took {minutes} minutes and '
       f'{seconds} seconds')
 
+# -----------------------------------------------------------------------------
+# Generate Output of DBSCAN
+# -----------------------------------------------------------------------------
+# %%
+# Invert the scaling applied by StandardScaler
+dbscan_output = scaler.inverse_transform(input_scaled)
+
+# # Invert the PCA transformation
+# input_pca_inverted = pca.inverse_transform(input_pca)
+
+# Convert the dbscan_output array to a pandas DataFrame
+dbscan_output = pd.DataFrame(dbscan_output, columns=input_scaled.columns)
+dbscan_output['Line_Number'] = dbscan_output['Line_Number'].round(0)
+
+# Add the labels column to the dbscan_output at position 0
+dbscan_output.insert(0, 'INDEX', total_payments_academic.index)
+dbscan_output.insert(1, 'labels_dbscan', labels_dbscan)
+dbscan_output.insert(2, 'Anomaly_dbscan', dbscan_output['labels_dbscan'] == -1)
+
+# Filter out the a data frame with only noise points
+dbscan_noise = dbscan_output[dbscan_output['Anomaly_dbscan']]
 
 # -----------------------------------------------------------------------------
 # HDBSCAN
@@ -432,34 +483,11 @@ sns.distplot(hdbscan.outlier_scores_[np.isfinite(hdbscan.outlier_scores_)],
 
 plt.show()
 
-# Defined the threshold for the outlier scores at 95% quantile
-threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.95)
+# Defined the threshold for the outlier scores at 98% quantile
+threshold = pd.Series(hdbscan.outlier_scores_).quantile(0.98)
 outliers_hdbscan = np.where(hdbscan.outlier_scores_ > threshold)[0]
 
 print(f'Number of outliers: {len(outliers_hdbscan)}')
-
-
-# -----------------------------------------------------------------------------
-# Generate Output of DBSCAN
-# -----------------------------------------------------------------------------
-# %%
-# Invert the scaling applied by StandardScaler
-dbscan_output = scaler.inverse_transform(input_scaled)
-
-# # Invert the PCA transformation
-# input_pca_inverted = pca.inverse_transform(input_pca)
-
-# Convert the dbscan_output array to a pandas DataFrame
-dbscan_output = pd.DataFrame(dbscan_output, columns=input_scaled.columns)
-dbscan_output['Line_Number'] = dbscan_output['Line_Number'].round(0)
-
-# Add the labels column to the dbscan_output at position 0
-dbscan_output.insert(0, 'INDEX', total_payments_academic.index)
-dbscan_output.insert(1, 'labels_dbscan', labels_dbscan)
-dbscan_output.insert(2, 'Anomaly_dbscan', dbscan_output['labels_dbscan'] == -1)
-
-# Filter out the a data frame with only noise points
-dbscan_noise = dbscan_output[dbscan_output['Anomaly_dbscan']]
 
 # -----------------------------------------------------------------------------
 # Generate Output of HDBSCAN
