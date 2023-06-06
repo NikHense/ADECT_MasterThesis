@@ -193,3 +193,5 @@ plt.title('Scatter Plot of Payment Number vs. Amount Applied with Anomaly Sum Hi
 plt.show()
 
 # %%
+
+# %%

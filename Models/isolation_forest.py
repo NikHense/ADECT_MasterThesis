@@ -110,9 +110,11 @@ print(f'Isolation Forest grid search process took '
 sns.set_style('whitegrid')
 sns.relplot(x='max_samples', y='n_outliers', hue='n_estimators',
             legend='full', data=iso_output)
-plt.title('Number of outliers for different parameter combinations')
-plt.ylabel('Number of outliers')
+#plt.title('Number of outliers for different parameter combinations')
+plt.ylabel('Number of anomalies')
 plt.xlabel('Number of max_samples')
+# plt.xlim(0, 40000)
+# plt.ylim(1000, 4000)
 plt.show()
 
 # # Plot the results of the grid search in 3D
@@ -129,8 +131,8 @@ plt.show()
 
 # %% Plot average number of outliers per max_samples
 iso_output.groupby('max_samples')['n_outliers'].mean().plot()
-plt.title('Average number of outliers per max_samples')
-plt.ylabel('Average number of outliers')
+#plt.title('Average number of anomalies per max_samples')
+plt.ylabel('Number of anomalies')
 plt.xlabel('Number of max_samples')
 plt.show()
 
@@ -144,7 +146,6 @@ x = max_samples_list
 
 # %%
 kneedle = KneeLocator(x, avg_outlier,
-                      #  S=5,
                       interp_method='polynomial',
                       #  smoothen the lines, otherwise bumpy
                       curve='convex', direction='decreasing')
@@ -159,19 +160,30 @@ kneedle.plot_knee_normalized()
 plt.show()
 
 # Plot the k-distance graph with the knee point (zoomed in)
-plt.figure(figsize=(10, 10))
-plt.plot(x, avg_outlier, 'ro-', linewidth=2)
-plt.axvline(x=kneedle.elbow, color='b', linestyle='--')
-plt.axhline(y=kneedle.elbow_y, color='b', linestyle='--')
-plt.text(kneedle.elbow + 500, kneedle.elbow_y + 50,
-         f'elbow point ({round(kneedle.elbow, 0)}, '
-         f'{round(kneedle.elbow_y, 3)})', fontsize=12)
-plt.title('Average number of outliers per max_samples')
+# plt.figure(figsize=(10, 10))
+# plt.plot(x, avg_outlier, 'ro-', linewidth=2)
+# plt.axvline(x=kneedle.elbow, color='b', linestyle='--')
+# plt.axhline(y=kneedle.elbow_y, color='b', linestyle='--')
+# plt.text(kneedle.elbow + 500, kneedle.elbow_y + 200,
+#          f'max_samples ({round(kneedle.elbow, 0)})',
+#          fontsize=13)
+# plt.title('Average number of outliers per max_samples')
+# plt.xlabel('Number of max_samples')
+# plt.ylabel('Average number of outliers')
+# plt.xlim(kneedle.elbow - 10000, kneedle.elbow + 10000)
+# plt.ylim(kneedle.elbow_y - 500, kneedle.elbow_y + 1000)
+# plt.show()
+
+plt.style.use('ggplot')
+kneedle.plot_knee()
 plt.xlabel('Number of max_samples')
-plt.ylabel('Average number of outliers')
-plt.xlim(kneedle.elbow - 10000, kneedle.elbow + 10000)
-plt.ylim(kneedle.elbow_y - 500, kneedle.elbow_y + 1000)
+plt.ylabel('Number of outliers')
+plt.title('')
+plt.text(kneedle.elbow + 1500, kneedle.elbow_y + 200,
+         f'max_samples ({round(kneedle.elbow, 0)})',
+         fontsize=11)
 plt.show()
+
 
 # %% Create the isolation forest with tuned parameter
 starttime = time.time()

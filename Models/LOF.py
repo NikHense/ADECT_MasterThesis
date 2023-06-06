@@ -176,14 +176,14 @@ best_n = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]['n']
 # best_n = kneedle.elbow
 
 # %% Run LOF with best n
-lof_best = LocalOutlierFactor(n_neighbors=int(best_n),
+lof_best = LocalOutlierFactor(n_neighbors=20,
                               contamination='auto',
                               n_jobs=-1)
 labels_lof = lof_best.fit_predict(input_pca)
 CH_score = round(metrics.calinski_harabasz_score(input_pca, labels_lof), 4)
 n_outlier = np.count_nonzero(labels_lof == -1)
 
-print("For n =", best_n, "CH_score :", CH_score, "n_outlier :", n_outlier)
+print("For n =", 20, "CH_score :", CH_score, "n_outlier :", n_outlier)
 
 # %% 
 # Invert the scaling applied by StandardScaler
