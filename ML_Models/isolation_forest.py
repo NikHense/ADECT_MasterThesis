@@ -144,7 +144,7 @@ avg_outlier = np.array(avg_outlier)
 # Create array that goes from 1000 to the length of avg_outlier in 1000 steps
 x = max_samples_list
 
-# %%
+# %% Calculate the maximum curvature point of the average number of outliers
 kneedle = KneeLocator(x, avg_outlier,
                       interp_method='polynomial',
                       #  smoothen the lines, otherwise bumpy
@@ -225,7 +225,7 @@ if_output.insert(2, "scores", if_scores, True)
 if_output['labels_if'] = if_output['labels_if'].apply(lambda x: True if x == -1
                                                       else False)
 
-# Filter out the a data frame with only noise points & clean
+# Filter out the data frame with only noise points & clean
 if_noise = if_output[if_output['labels_if']]
 
 # %% End and print the total time of Isolation Forest process
@@ -234,9 +234,4 @@ seconds = int((time.time() - totaltime) % 60)
 print(f'Isolation Forest process took {minutes} minutes and '
       f'{seconds} seconds')
 
-# %% Remove the first three columns of the input data frame
-# input = input.iloc[:, 3:]
-
-# Delete if_output data frame
-# del if_output 
 # %%

@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import seaborn as sns
+# import seaborn as sns
 # from sqlalchemy import create_engine, text
 from sdv.metadata import SingleTableMetadata
 from sdv.single_table import GaussianCopulaSynthesizer
@@ -16,6 +16,9 @@ from sdv.evaluation.single_table import run_diagnostic
 from sklearn.preprocessing import LabelEncoder
 # from anonymizedf.anonymizedf import anonymize
 
+# ---------------------------------------------------------------------------
+# Import Data
+# ---------------------------------------------------------------------------
 # # %% Params SQL connection
 # SERVER = 'P-SQLDWH'  # os.environ.get('SERVER')
 # DB = 'ML'
@@ -181,6 +184,9 @@ from sklearn.preprocessing import LabelEncoder
 # fraud_invoices.to_csv('Fraud_Invoices_final.csv',
 #                       sep=";", index=False)
 
+# ---------------------------------------------------------------------------
+# Load final dataset ready for study
+# ---------------------------------------------------------------------------
 # %% Load the final dataset
 # Define the data types for each feature as they were in the original dataset
 
@@ -382,11 +388,11 @@ synthetic_data3['Fraud'] = 2
 
 # %% Include the synthetic_data to the fraud_invoices
 fraud_invoices1 = pd.concat([fraud_invoices, synthetic_data],
-                           ignore_index=True)
+                            ignore_index=True)
 fraud_invoices2 = pd.concat([fraud_invoices, synthetic_data1],
                             ignore_index=True)
 fraud_invoices3 = pd.concat([fraud_invoices, synthetic_data2],
-                            ignore_index=True) #  highest Overall Quality score
+                            ignore_index=True)  #  highest Overall Quality score
 fraud_invoices4 = pd.concat([fraud_invoices, synthetic_data3],
                             ignore_index=True)
 
@@ -394,7 +400,8 @@ fraud_invoices4 = pd.concat([fraud_invoices, synthetic_data3],
 # Data Preprocessing & Feature Engineering
 # ---------------------------------------------------------------------------
 # %% Add entries of fraudulent invoices to total_payments
-total_payments_academic = pd.concat([total_payments_academic, fraud_invoices3], ignore_index=True)
+total_payments_academic = pd.concat([total_payments_academic,
+                                     fraud_invoices3], ignore_index=True)
 
 # Transforn nan of 'Fraud' column to 0 and 'Review_Status' to 'synthetic'
 total_payments_academic['Fraud'] = total_payments_academic['Fraud'].fillna(0)
@@ -499,183 +506,4 @@ for col in cat_cols:
 
 print(input.info())
 
-# %% Summary Statistics of numeric features
-# Select the desired attributes/columns
-selected_attributes = ['Amount_Applied', 'Amount_Initial', 'Discount_Applied', 'Discount_Rate']
-
-# Get summary statistics for the selected attributes
-summaryStats_num = input.loc[:, selected_attributes].describe(include='all')
-summaryStats_num = summaryStats_num.round(2)
-
-# Create a latex table for summary statistics
-print(summaryStats_num.to_latex())
-
-# %% Summary Statistics of categorical features
-# Select the desired attributes/columns
-selected_attributes = ['Payment_Number', 'Object_Number',
-                        'Country_Region_Code', 'Discount_Allowed',
-                        'Payment_Method_Code', 'Customer_IBAN',
-                        'Vendor_IBAN_BIC', 'Vendor_Bank_Origin',
-                        'Created_By', 'Source_System', 'Mandant']
-
-# Get summary statistics for the selected attributes
-summaryStats_cat = input.loc[:, selected_attributes].describe(include='all').transpose()
-
-
-# Create a latex table for summary statistics
-print(summaryStats_cat.to_latex())
-
-# %% Create box plot of Amount_Applied for each source system
-
-# Extract 'Amount_Applied' and 'Source_system' columns
-amount_applied = input['Amount_Applied']
-source_system = input['Source_System']
-
-# Create a dictionary to store the 'Amount_Applied' values for each 'Source_system'
-data = {}
-for system in source_system.unique():
-    data[system] = amount_applied[source_system == system]
-
-# Create a list to store the 'Amount_Applied' values for each 'Source_system'
-values = []
-for system, amounts in data.items():
-    values.append(amounts)
-    
-# Create a box plot
-plt.boxplot(values, labels=['BFSN', 'RELN'], sym='rx',
-            patch_artist=True, vert=False, notch=True)
-
-# Add labels and title
-plt.ylabel('Source System')
-plt.xlabel('Amount Applied')
-# plt.title('Box Plot of Amount Applied by Source System')
-
-# Show the plot
-plt.show()
-
-# %% Create a plot of the number of transactions by posting date
-# Convert 'Posting_Date' column to datetime if it's not already in that format
-total_payments_academic['Posting_Date'] = pd.to_datetime(total_payments_academic['Posting_Date'])
-
-# Filter transactions that have a 1 in the 'Anomaly_if' feature
-anomaly_transactions = total_payments_academic[total_payments_academic['Fraud']  != 2]
-
-# Group transactions by posting date and count the number of transactions in each group
-transactions_by_date = anomaly_transactions['Posting_Date'].value_counts().sort_index()
-
-# Create a bar plot to visualize the distribution of transactions by posting date
-plt.figure(figsize=(12, 6))
-bars = plt.bar(transactions_by_date.index, transactions_by_date.values, label='Transactions')
-
-# Customize the bar color
-for bar in bars:
-    bar.set_color('red')
-    bar.set_alpha(0.5)
-
-plt.xlabel('Posting_Date')
-plt.ylabel('Number of Transactions')
-plt.xticks(rotation=45)
-# plt.legend()
-
-# Set the background color to white
-plt.gca().set_facecolor('white')
-
-# Add horizontal gray grid lines
-plt.grid(color='gray', linestyle='--', linewidth=0.5)
-
-# Add a black frame around the plot
-plt.gca().spines['top'].set_visible(True)
-plt.gca().spines['bottom'].set_visible(True)
-plt.gca().spines['left'].set_visible(True)
-plt.gca().spines['right'].set_visible(True)
-plt.gca().spines['top'].set_color('black')
-plt.gca().spines['bottom'].set_color('black')
-plt.gca().spines['left'].set_color('black')
-plt.gca().spines['right'].set_color('black')
-
-plt.xlabel('Posting_Date')
-plt.ylabel('Number of Transactions')
-# plt.title('Number of Transactions by Posting_Date')
-plt.xticks(rotation=45)
-plt.legend()
-
-# Get the date and count of the top 1 day with the largest transactions
-top1_date = transactions_by_date.nlargest(1).index[0]
-top1_count = transactions_by_date.nlargest(1).values[0]
-
-# Highlight the top 1 day with a circle marker
-plt.plot(top1_date, top1_count, marker='o', markersize=2, color='red')
-
-# Add the number of transactions for the top 1 day as text next to the record
-plt.text(top1_date, top1_count, str(top1_count), ha='left', va='bottom', color='red')
-
-plt.show()
-
-# Get me the dates and respective counts of the top 10 days with the most transactions
-print(transactions_by_date.nlargest(5))
-
-# calculate the average number of transactions per day
-print(transactions_by_date.mean())
-
-# %%
-# Convert 'Posting_Date' column to datetime if it's not already in that format
-total_payments_academic['Posting_Date'] = pd.to_datetime(total_payments_academic['Posting_Date'])
-
-# Filter transactions that have a 1 in the 'Anomaly_if' feature
-anomaly_transactions = total_payments_academic[total_payments_academic['Fraud']  != 2]
-
-# Group filtered transactions by posting date and count the number of transactions in each group
-transactions_by_date = anomaly_transactions['Posting_Date'].value_counts().sort_index()
-
-
-# Create a bar plot to visualize the distribution of transactions by posting date
-fig, ax = plt.subplots(figsize=(12, 6))
-bars =  ax.bar(transactions_by_date.index, transactions_by_date.values)
-ax.set_xlabel('Posting_Date')
-ax.set_ylabel('Number of Transactions')
-# ax.set_title('Distribution of Transactions by Posting Date')
-
-# Set the x-axis tick frequency to show each 7-day period
-ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
-
-# Set the x-axis tick labels starting from '2023-01-04' in a 7-day interval
-start_date = pd.Timestamp('2023-01-04')
-end_date = transactions_by_date.index[-1]  # Set the end date as the last date in the dataset
-date_range = pd.date_range(start_date, end_date, freq='7D')
-ax.set_xticks(date_range)
-ax.set_xticklabels(date_range.strftime('%Y-%m-%d'))
-
-# Set the x-axis limits using datetime values
-plt.xlim(pd.Timestamp('2023-01-01'), pd.Timestamp('2023-05-12'))
-
-# Rotate the x-axis tick labels for better readability
-plt.xticks(rotation=45, ha='right')
-
-# Customize the bar color
-for bar in bars:
-    bar.set_color('red')
-    bar.set_alpha(0.8)
-
-plt.xlabel('Posting_Date')
-plt.ylabel('Number of Transactions')
-plt.xticks(rotation=45)
-# plt.legend()
-
-# Set the background color to white
-plt.gca().set_facecolor('white')
-
-# Add horizontal gray grid lines
-plt.grid(color='gray', linestyle='--', linewidth=0.5)
-
-# Add a black frame around the plot
-plt.gca().spines['top'].set_visible(True)
-plt.gca().spines['bottom'].set_visible(True)
-plt.gca().spines['left'].set_visible(True)
-plt.gca().spines['right'].set_visible(True)
-plt.gca().spines['top'].set_color('black')
-plt.gca().spines['bottom'].set_color('black')
-plt.gca().spines['left'].set_color('black')
-plt.gca().spines['right'].set_color('black')
-
-plt.show()
 # %% 

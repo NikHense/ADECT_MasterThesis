@@ -84,6 +84,6 @@ results_generation.py
 
 # Ignore folder for uploading to GitHub
 SQLDataMining/
-Templates/
+Template/
 ModelResults/
-Archiv/
+Archive/

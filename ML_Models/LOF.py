@@ -19,64 +19,64 @@ totaltime = time.time()
 # %% Execute grid search for K-Means
 starttime = time.time()
 
-scaler = StandardScaler()
-input_lof_scaled = scaler.fit_transform(input)
-input_lof_scaled = pd.DataFrame(input_lof_scaled, columns=input.columns)
+# scaler = StandardScaler()
+# input_lof_scaled = scaler.fit_transform(input)
+# input_lof_scaled = pd.DataFrame(input_lof_scaled, columns=input.columns)
 
-input_lof_scaled.mean()
-input_lof_scaled.var()
+# # input_lof_scaled.mean()
+# # input_lof_scaled.var()
 
-# %% Test out the PCA and optimal number of principal components
+# # %% Test out the PCA and optimal number of principal components
 
-# Perform a PCA on input_scaled
-pca = PCA(n_components=len(input_lof_scaled.columns))
-input_pca = pca.fit_transform(input_lof_scaled)
+# # Perform a PCA on input_scaled
+# pca = PCA(n_components=len(input_lof_scaled.columns))
+# input_pca = pca.fit_transform(input_lof_scaled)
 
-# # # Method 1: Scree plot
-# # # Plot the eigenvalues of the principal components
-# # plt.plot(range(1, pca.n_components_ + 1),
-# #          pca.explained_variance_ratio_, 'ro-', linewidth=2)
-# # plt.title('Scree Plot')
-# # plt.xlabel('Principal Component')
-# # plt.ylabel('Eigenvalue')
-# # plt.show()
+# # # # Method 1: Scree plot
+# # # # Plot the eigenvalues of the principal components
+# # # plt.plot(range(1, pca.n_components_ + 1),
+# # #          pca.explained_variance_ratio_, 'ro-', linewidth=2)
+# # # plt.title('Scree Plot')
+# # # plt.xlabel('Principal Component')
+# # # plt.ylabel('Eigenvalue')
+# # # plt.show()
 
-# Method 2: Cumulative proportion of variance explained
-# Calculate the cum. proportion of variance explained
-cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
+# # Method 2: Cumulative proportion of variance explained
+# # Calculate the cum. proportion of variance explained
+# cumulative_variance_ratio = np.cumsum(pca.explained_variance_ratio_)
 
-# Plot the cum. proportion of variance explained, with the 99% threshold
-num_components = range(1, len(input_lof_scaled.columns) + 1)
-plt.plot(num_components, cumulative_variance_ratio, 'ro-', linewidth=2)
-plt.axhline(y=0.99, color='b', linestyle='--')
-plt.title('Cumulative Proportion of Variance Explained')
-plt.xlabel('Number of Principal Components')
-plt.ylabel('Cumulative Proportion of Variance Explained')
-# Find the index of the element in y_values that is closest to 0.99
-threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
+# # Plot the cum. proportion of variance explained, with the 99% threshold
+# num_components = range(1, len(input_lof_scaled.columns) + 1)
+# plt.plot(num_components, cumulative_variance_ratio, 'ro-', linewidth=2)
+# plt.axhline(y=0.99, color='b', linestyle='--')
+# plt.title('Cumulative Proportion of Variance Explained')
+# plt.xlabel('Number of Principal Components')
+# plt.ylabel('Cumulative Proportion of Variance Explained')
+# # Find the index of the element in y_values that is closest to 0.99
+# threshold_idx = (np.abs(cumulative_variance_ratio - 0.99)).argmin()
 
-# Get the x-coordinate of the threshold
-threshold_x = num_components[threshold_idx]
+# # Get the x-coordinate of the threshold
+# threshold_x = num_components[threshold_idx]
 
-# Add a vertical line at the threshold x-coordinate
-plt.axvline(x=threshold_x, color='b', linestyle='--')
-plt.show()
+# # Add a vertical line at the threshold x-coordinate
+# plt.axvline(x=threshold_x, color='b', linestyle='--')
+# plt.show()
 
-# retrieve the number of components that explain 99% of the variance
-n_components = np.argmax(cumulative_variance_ratio >= 0.99)
-
-print(f'{n_components} principal components explain 99% of the variance')
-
-# if n_components > 15 than 15 otherwise
+# # retrieve the number of components that explain 99% of the variance
 # n_components = np.argmax(cumulative_variance_ratio >= 0.99)
-if n_components > 15:
-    n_components = 15
-else:
-    n_components = np.argmax(cumulative_variance_ratio >= 0.99)
+
+# print(f'{n_components} principal components explain 99% of the variance')
+
+# # if n_components > 15 than 15 otherwise
+# # n_components = np.argmax(cumulative_variance_ratio >= 0.99)
+# if n_components > 15:
+#     n_components = 15
+# else:
+#     n_components = np.argmax(cumulative_variance_ratio >= 0.99)
 
 # %% Perform a final PCA on input_lof_scaled w/ best num. of components
-pca = PCA(n_components=n_components)
-input_pca = pca.fit_transform(input_lof_scaled)
+# pca = PCA(n_components=n_components)
+# input_pca = pca.fit_transform(input_lof_scaled)
 
 # %%
 # %%
@@ -175,25 +175,27 @@ plt.show()
 best_n = results_LOF_CH.loc[results_LOF_CH['CH_score'].idxmax()]['n']
 # best_n = kneedle.elbow
 
-# %% Run LOF with best n
-lof_best = LocalOutlierFactor(n_neighbors=20,
-                              contamination='auto',
-                              n_jobs=-1)
-labels_lof = lof_best.fit_predict(input_pca)
-CH_score = round(metrics.calinski_harabasz_score(input_pca, labels_lof), 4)
+# %% Run LOF
+lof = LocalOutlierFactor(n_neighbors=20,
+                         contamination='auto',
+                         n_jobs=-1)
+labels_lof = lof.fit_predict(input_pca)
+# CH_score = round(metrics.calinski_harabasz_score(input_pca, labels_lof), 4)
 n_outlier = np.count_nonzero(labels_lof == -1)
 
-print("For n =", 20, "CH_score :", CH_score, "n_outlier :", n_outlier)
+print("For n =", 20,
+    #   "CH_score :", CH_score,
+      "n_outlier :", n_outlier)
 
 # %% 
 # Invert the scaling applied by StandardScaler
-lof_output = scaler.inverse_transform(input_lof_scaled)
+lof_output = scaler.inverse_transform(input_scaled)
 
 # Invert the PCA transformation
 # input_pca_inverted = pca.inverse_transform(input_pca)
 
 # Convert the dbscan_output array to a pandas DataFrame
-lof_output = pd.DataFrame(lof_output, columns=input_lof_scaled.columns)
+lof_output = pd.DataFrame(lof_output, columns=input_scaled.columns)
 
 # Add the labels column to the dbscan_output at position 0
 lof_output.insert(0, 'INDEX', total_payments_academic.index)
