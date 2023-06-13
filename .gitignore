@@ -74,4 +74,16 @@ venv*/
 *.parquet
 *.pickle
 test.txt
+DBSCAN.py
+HDBSCAN.py
+KNEELocator.py
+results_generation.py
 
+!Fraud_Invoices_final.csv
+!total_payments_academic.csv
+
+# Ignore folder for uploading to GitHub
+SQLDataMining/
+Templates/
+ModelResults/
+Archiv/
