@@ -235,7 +235,7 @@ dtypes_totpaym = {
 date_columns = ['Posting_Date', 'Due_Date']
 
 # Import the final dataset with the correct data types
-total_payments_academic = pd.read_csv('total_payments_academic.csv',
+total_payments_academic = pd.read_csv('Input_Data/total_payments_academic.csv',
                                       dtype=dtypes_totpaym,
                                       parse_dates=date_columns,
                                       na_values='NA',
@@ -249,7 +249,7 @@ dtypes_fraud = {
 }
 
 # Import Fraudulent Invoices csv file
-fraud_invoices = pd.read_csv('Fraud_Invoices_final.csv',
+fraud_invoices = pd.read_csv('Input_Data/Fraud_Invoices_final.csv',
                              dtype=dtypes_fraud,
                              na_values='NA',
                              sep=';')

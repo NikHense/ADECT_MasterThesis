@@ -83,7 +83,7 @@ results_generation.py
 !total_payments_academic.csv
 
 # Ignore folder for uploading to GitHub
-SQLDataMining/
+# SQLDataMining/
 Template/
 ModelResults/
 Archive/
